@@ -1,0 +1,33 @@
+# ─── .NET ───────────────────────────────────────────
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.log
+appsettings.Development.json
+appsettings.Local.json
+
+# ─── Angular ────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/.env
+
+# ─── Environment / Secrets ──────────────────────────
+.env
+.env.*
+*.secret
+secrets.json
+
+# ─── OS ─────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Docker ─────────────────────────────────────────
+docker-compose.override.yml
+
+# ─── JetBrains / VS Code ────────────────────────────
+.idea/
+.vscode/
+*.sln.DotSettings.user

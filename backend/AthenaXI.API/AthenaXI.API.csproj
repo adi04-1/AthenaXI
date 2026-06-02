@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    <PackageReference Include="Hangfire.AspNetCore" Version="1.8.6" />
+    <PackageReference Include="Hangfire.PostgreSql" Version="1.20.6" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AthenaXI.Core\AthenaXI.Core.csproj" />
+    <ProjectReference Include="..\AthenaXI.Data\AthenaXI.Data.csproj" />
+    <ProjectReference Include="..\AthenaXI.Jobs\AthenaXI.Jobs.csproj" />
+    <ProjectReference Include="..\AthenaXI.Kafka\AthenaXI.Kafka.csproj" />
+  </ItemGroup>
+
+</Project>
