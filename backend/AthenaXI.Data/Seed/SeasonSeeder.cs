@@ -16,9 +16,9 @@ public static class SeasonSeeder
             Name = "IPL 2025",
             Year = 2025,
             Status = SeasonStatus.Upcoming,
-            AuctionDate = new DateTime(2025, 3, 1),
-            SeasonStartDate = new DateTime(2025, 3, 22),
-            SeasonEndDate = new DateTime(2025, 5, 25),
+            SeasonStartDate = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
+            SeasonEndDate   = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc),
+            AuctionDate     = new DateTime(2026, 5, 25, 0, 0, 0, DateTimeKind.Utc),
         };
 
         var config = new SeasonConfig
