@@ -1,2 +1,2 @@
 namespace AthenaXI.Core.Enums;
-public enum TeamSlot { PlayingXI, Substitute }
+public enum TeamSlot { PlayingXI, Substitute, Reserve }

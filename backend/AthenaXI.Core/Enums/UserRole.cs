@@ -1,2 +1,2 @@
 namespace AthenaXI.Core.Enums;
-public enum UserRole { Player, Admin }
+public enum UserRole { AppOwner, LeagueAdmin, TeamOwner, Guest }
