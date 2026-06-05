@@ -52,7 +52,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "AthenaXI API", Version = "v1" });
+    c.SwaggerDoc("v2", new() { Title = "AthenaXI API", Version = "v2" });
     c.AddSecurityDefinition("Bearer", new()
     {
         Name = "Authorization",
@@ -77,15 +77,19 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AthenaXIDbContext>();
-    await db.Database.MigrateAsync();          // runs any pending migrations
+    //await db.Database.MigrateAsync();          // runs any pending migrations
     await SeasonSeeder.SeedAsync(db);          // seeds IPL 2025 season + config
 }
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
-if (app.Environment.IsDevelopment())
+if (true)
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v2/swagger.json", "AthenaXI API v2");
+        c.RoutePrefix = string.Empty; // Set Swagger UI at the app's root
+    });
 }
 
 app.UseCors("AllowAngular");

@@ -3,6 +3,7 @@ using System;
 using AthenaXI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AthenaXI.Data.Migrations
 {
     [DbContext(typeof(AthenaXIDbContext))]
-    partial class AthenaXIDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260605201332_AddTeamIdentityAndRetention")]
+    partial class AddTeamIdentityAndRetention
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

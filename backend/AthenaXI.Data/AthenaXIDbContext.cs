@@ -10,6 +10,8 @@ public class AthenaXIDbContext(DbContextOptions<AthenaXIDbContext> options) : Db
     public DbSet<Player> Players => Set<Player>();
     public DbSet<Season> Seasons => Set<Season>();
     public DbSet<SeasonConfig> SeasonConfigs => Set<SeasonConfig>();
+    public DbSet<FantasyTeam> FantasyTeams => Set<FantasyTeam>();
+    public DbSet<RetainedPlayer> RetainedPlayers => Set<RetainedPlayer>();
     public DbSet<UserTeam> UserTeams => Set<UserTeam>();
     public DbSet<UserTeamPlayer> UserTeamPlayers => Set<UserTeamPlayer>();
     public DbSet<AuctionSession> AuctionSessions => Set<AuctionSession>();
@@ -44,13 +46,14 @@ public class AthenaXIDbContext(DbContextOptions<AthenaXIDbContext> options) : Db
         mb.Entity<Season>(e =>
         {
             e.Property(s => s.Status).HasConversion<string>();
+            e.Property(s => s.Mode).HasConversion<string>();
             e.HasOne(s => s.Config)
              .WithOne(c => c.Season)
              .HasForeignKey<SeasonConfig>(c => c.SeasonId)
              .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ── SeasonConfig — all decimal precision ─────────────────────────────
+        // ── SeasonConfig ──────────────────────────────────────────────────────
         mb.Entity<SeasonConfig>(e =>
         {
             e.Property(c => c.BudgetPerTeamCr).HasPrecision(8, 2);
@@ -61,7 +64,41 @@ public class AthenaXIDbContext(DbContextOptions<AthenaXIDbContext> options) : Db
             e.Property(c => c.PlayingXIMultiplier).HasPrecision(4, 2);
         });
 
-        // ── UserTeam ─────────────────────────────────────────────────────────
+        // ── FantasyTeam ───────────────────────────────────────────────────────
+        mb.Entity<FantasyTeam>(e =>
+        {
+            e.HasIndex(t => new { t.SeasonId, t.ShortCode }).IsUnique();
+            e.HasOne(t => t.Season)
+             .WithMany()
+             .HasForeignKey(t => t.SeasonId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(t => t.User)
+             .WithMany()
+             .HasForeignKey(t => t.UserId)
+             .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ── RetainedPlayer ────────────────────────────────────────────────────
+        mb.Entity<RetainedPlayer>(e =>
+        {
+            e.HasIndex(r => new { r.FantasyTeamId, r.PlayerId }).IsUnique();
+            e.Property(r => r.RetentionCostCr).HasPrecision(5, 2);
+            e.Property(r => r.Slot).HasConversion<string>();
+            e.HasOne(r => r.FantasyTeam)
+             .WithMany(t => t.RetainedPlayers)
+             .HasForeignKey(r => r.FantasyTeamId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(r => r.Player)
+             .WithMany()
+             .HasForeignKey(r => r.PlayerId)
+             .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(r => r.Season)
+             .WithMany()
+             .HasForeignKey(r => r.SeasonId)
+             .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ── UserTeam ──────────────────────────────────────────────────────────
         mb.Entity<UserTeam>(e =>
         {
             e.HasIndex(t => new { t.UserId, t.SeasonId }).IsUnique();
@@ -76,7 +113,7 @@ public class AthenaXIDbContext(DbContextOptions<AthenaXIDbContext> options) : Db
              .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // ── UserTeamPlayer ───────────────────────────────────────────────────
+        // ── UserTeamPlayer ────────────────────────────────────────────────────
         mb.Entity<UserTeamPlayer>(e =>
         {
             e.HasIndex(p => new { p.UserTeamId, p.PlayerId }).IsUnique();
@@ -92,7 +129,7 @@ public class AthenaXIDbContext(DbContextOptions<AthenaXIDbContext> options) : Db
              .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // ── AuctionSession ───────────────────────────────────────────────────
+        // ── AuctionSession ────────────────────────────────────────────────────
         mb.Entity<AuctionSession>(e =>
         {
             e.Property(a => a.Status).HasConversion<string>();
@@ -119,7 +156,7 @@ public class AthenaXIDbContext(DbContextOptions<AthenaXIDbContext> options) : Db
              .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // ── AuctionBid ───────────────────────────────────────────────────────
+        // ── AuctionBid ────────────────────────────────────────────────────────
         mb.Entity<AuctionBid>(e =>
         {
             e.Property(b => b.AmountCr).HasPrecision(5, 2);
@@ -148,7 +185,7 @@ public class AthenaXIDbContext(DbContextOptions<AthenaXIDbContext> options) : Db
              .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // ── MatchEvent ───────────────────────────────────────────────────────
+        // ── MatchEvent ────────────────────────────────────────────────────────
         mb.Entity<MatchEvent>(e =>
         {
             e.HasIndex(m => new { m.SeasonId, m.MatchNumber }).IsUnique();

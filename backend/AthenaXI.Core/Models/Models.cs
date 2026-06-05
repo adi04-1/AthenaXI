@@ -52,6 +52,7 @@ public class Season
     public string Name { get; set; } = string.Empty;
     public int Year { get; set; }
     public SeasonStatus Status { get; set; } = SeasonStatus.Upcoming;
+    public SeasonMode Mode { get; set; } = SeasonMode.FreshAuction;
     public DateTime? AuctionDate { get; set; }
     public DateTime? SeasonStartDate { get; set; }
     public DateTime? SeasonEndDate { get; set; }
@@ -82,6 +83,8 @@ public class SeasonConfig
     public decimal DefaultBidIncrementCr { get; set; } = 1.00m;
     public int BidTimerSeconds { get; set; } = 10;
     public int MaxSwapsPerWindow { get; set; } = 2;
+    public int MaxRetainedPlayersPerTeam { get; set; } = 3;
+    public int MaxOverseasRetained { get; set; } = 1;
 
     // Transfer windows
     public int TransferWindow1AfterMatch { get; set; } = 18;
@@ -349,4 +352,39 @@ public class Notification
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public User User { get; set; } = null!;
+}
+// ─── FANTASY TEAM IDENTITY ────────────────────────────────────────────────────
+
+public class FantasyTeam
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid SeasonId { get; set; }
+    public Guid UserId { get; set; }               // linked login
+    public string Name { get; set; } = string.Empty;          // Chennai Strikers
+    public string ShortCode { get; set; } = string.Empty;     // CS
+    public string ThemeColour { get; set; } = "#1A1A2E";      // hex
+    public string OwnerDisplayName { get; set; } = string.Empty;
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public Season Season { get; set; } = null!;
+    public User User { get; set; } = null!;
+    public ICollection<RetainedPlayer> RetainedPlayers { get; set; } = [];
+}
+
+// ─── RETAINED PLAYER ──────────────────────────────────────────────────────────
+
+public class RetainedPlayer
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid FantasyTeamId { get; set; }
+    public Guid SeasonId { get; set; }
+    public Guid PlayerId { get; set; }
+    public decimal RetentionCostCr { get; set; }   // custom per player
+    public TeamSlot Slot { get; set; } = TeamSlot.PlayingXI;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public FantasyTeam FantasyTeam { get; set; } = null!;
+    public Player Player { get; set; } = null!;
+    public Season Season { get; set; } = null!;
 }
