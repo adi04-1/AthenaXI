@@ -1,7 +1,9 @@
+using AthenaXI.API.Endpoints;
+using AthenaXI.API.Services;
 using AthenaXI.Data;
 using AthenaXI.Data.Seed;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Hangfire;
@@ -13,8 +15,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AthenaXIDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// ─── Services ─────────────────────────────────────────────────────────────────
+builder.Services.AddScoped<TokenService>();
+
 // ─── Auth (JWT) ───────────────────────────────────────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new Exception("JWT Key not configured");
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -26,11 +32,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer              = builder.Configuration["Jwt:Issuer"],
             ValidAudience            = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+            IssuerSigningKey         = new SymmetricSecurityKey(
+                                           Encoding.UTF8.GetBytes(jwtKey)),
+            ClockSkew                = TimeSpan.Zero
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AppOwnerOnly",    p => p.RequireClaim("role", "AppOwner"));
+    options.AddPolicy("AdminOrOwner",    p => p.RequireClaim("role", "AppOwner", "LeagueAdmin"));
+    options.AddPolicy("TeamOwnerOrAbove",p => p.RequireClaim("role", "AppOwner", "LeagueAdmin", "TeamOwner"));
+});
 
 // ─── Hangfire ─────────────────────────────────────────────────────────────────
 builder.Services.AddHangfire(config =>
@@ -45,27 +58,35 @@ builder.Services.AddCors(options =>
                 "http://localhost:4200",
                 "https://YOURUSERNAME.github.io")
               .AllowAnyHeader()
-              .AllowAnyMethod());
+              .AllowAnyMethod()
+              .AllowCredentials());
 });
 
 // ─── Swagger ──────────────────────────────────────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v2", new() { Title = "AthenaXI API", Version = "v2" });
+    c.SwaggerDoc("v1", new() { Title = "AthenaXI API", Version = "v1" });
     c.AddSecurityDefinition("Bearer", new()
     {
-        Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-        Scheme = "bearer",
+        Name        = "Authorization",
+        Type        = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme      = "bearer",
         BearerFormat = "JWT",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Enter your JWT token"
+        In          = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Paste your JWT token here"
     });
     c.AddSecurityRequirement(new()
     {
         {
-            new() { Reference = new() { Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme, Id = "Bearer" } },
+            new()
+            {
+                Reference = new()
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id   = "Bearer"
+                }
+            },
             []
         }
     });
@@ -73,46 +94,44 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// ─── Auto migrate + seed on startup ──────────────────────────────────────────
+// ─── Auto migrate + seed ──────────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AthenaXIDbContext>();
-    //await db.Database.MigrateAsync();          // runs any pending migrations
-    await SeasonSeeder.SeedAsync(db);          // seeds IPL 2025 season + config
+    //await db.Database.MigrateAsync();
+    await AppOwnerSeeder.SeedAsync(db);
+    await SeasonSeeder.SeedAsync(db);
 }
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
-if (true)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v2/swagger.json", "AthenaXI API v2");
-        c.RoutePrefix = string.Empty; // Set Swagger UI at the app's root
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "AthenaXI API v1");
+    c.RoutePrefix = "swagger";
+});
 
 app.UseCors("AllowAngular");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseHangfireDashboard("/hangfire");
 
-// ─── Health check ─────────────────────────────────────────────────────────────
+// ─── Routes ───────────────────────────────────────────────────────────────────
 app.MapGet("/health", () => Results.Ok(new
 {
     status    = "healthy",
     app       = "AthenaXI",
-    version   = "0.1.0",
+    version   = "0.3.0",
     timestamp = DateTime.UtcNow
 })).AllowAnonymous();
 
-// ─── Endpoints (wired up Day 3+) ──────────────────────────────────────────────
-// app.MapAuthEndpoints();
-// app.MapPlayerEndpoints();
-// app.MapTeamEndpoints();
-// app.MapLeaderboardEndpoints();
-// app.MapTransferEndpoints();
-// app.MapAdminEndpoints();
-// app.MapAuctionEndpoints();
+// Auth — Day 3 ✅
+app.MapAuthEndpoints();
+
+// Coming soon:
+// app.MapSeasonEndpoints();   // Day 5
+// app.MapTeamEndpoints();     // Day 6
+// app.MapAuctionEndpoints();  // Day 10
+// app.MapLeaderboardEndpoints(); // Day 28
 
 app.Run();
