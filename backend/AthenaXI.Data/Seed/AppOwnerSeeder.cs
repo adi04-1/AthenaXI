@@ -17,7 +17,7 @@ public static class AppOwnerSeeder
         {
             Username     = "athenaxi_owner",
             Email        = "owner@athenaxi.local",
-            PasswordHash = HashPassword(password),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
             Role         = UserRole.AppOwner,
             TeamName     = "App Owner",
             IsActive     = true,

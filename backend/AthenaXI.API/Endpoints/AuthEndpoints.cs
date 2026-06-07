@@ -3,7 +3,6 @@ using AthenaXI.Core.DTOs;
 using AthenaXI.Core.Enums;
 using AthenaXI.Core.Models;
 using AthenaXI.Data;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -16,15 +15,13 @@ public static class AuthEndpoints
         var group = app.MapGroup("/api/auth").WithTags("Auth");
 
         // ── POST /api/auth/register ──────────────────────────────────────────
-        // AppOwner only — creates League Admin or guest accounts
         group.MapPost("/register", async (
             RegisterRequest req,
             AthenaXIDbContext db,
             TokenService tokenSvc,
             ClaimsPrincipal caller) =>
         {
-            // Only AppOwner can register new users
-            var callerRole = caller.FindFirst("role")?.Value;
+            var callerRole = GetRole(caller);
             if (callerRole != nameof(UserRole.AppOwner))
                 return Results.Forbid();
 
@@ -50,7 +47,7 @@ public static class AuthEndpoints
             return Results.Created($"/api/auth/{user.Id}", new AuthResponse(
                 token, user.Username, user.Role.ToString(),
                 user.Id, user.TeamName, expiresAt));
-        }).RequireAuthorization();
+        }).AllowAnonymous();
 
         // ── POST /api/auth/login ─────────────────────────────────────────────
         group.MapPost("/login", async (
@@ -78,7 +75,10 @@ public static class AuthEndpoints
             ClaimsPrincipal caller,
             AthenaXIDbContext db) =>
         {
-            var userId = Guid.Parse(caller.FindFirst("userId")!.Value);
+            var userIdClaim = caller.FindFirst("userId")?.Value;
+            if (userIdClaim is null) return Results.Unauthorized();
+
+            var userId = Guid.Parse(userIdClaim);
             var user   = await db.Users.FindAsync(userId);
             if (user is null) return Results.NotFound();
 
@@ -93,14 +93,13 @@ public static class AuthEndpoints
         }).RequireAuthorization();
 
         // ── POST /api/auth/team-login ────────────────────────────────────────
-        // Creates a team-scoped login (AppOwner or LeagueAdmin)
         group.MapPost("/team-login", async (
             CreateTeamLoginRequest req,
             AthenaXIDbContext db,
             TokenService tokenSvc,
             ClaimsPrincipal caller) =>
         {
-            var callerRole = caller.FindFirst("role")?.Value;
+            var callerRole = GetRole(caller);
             if (callerRole != nameof(UserRole.AppOwner) &&
                 callerRole != nameof(UserRole.LeagueAdmin))
                 return Results.Forbid();
@@ -108,18 +107,15 @@ public static class AuthEndpoints
             if (await db.Users.AnyAsync(u => u.Username == req.Username.Trim().ToLower()))
                 return Results.Conflict(new { error = "Username already taken." });
 
-            // Validate season exists
             var season = await db.Seasons.FindAsync(req.SeasonId);
             if (season is null)
                 return Results.NotFound(new { error = "Season not found." });
 
-            // Validate short code unique per season
             if (await db.FantasyTeams.AnyAsync(t =>
                     t.SeasonId == req.SeasonId &&
                     t.ShortCode == req.ShortCode.ToUpper()))
                 return Results.Conflict(new { error = "Short code already used in this season." });
 
-            // Create user
             var user = new User
             {
                 Username     = req.Username.Trim().ToLower(),
@@ -131,15 +127,14 @@ public static class AuthEndpoints
             db.Users.Add(user);
             await db.SaveChangesAsync();
 
-            // Create fantasy team identity
             var team = new FantasyTeam
             {
-                UserId             = user.Id,
-                SeasonId           = req.SeasonId,
-                Name               = req.TeamName,
-                ShortCode          = req.ShortCode.ToUpper(),
-                ThemeColour        = req.ThemeColour,
-                OwnerDisplayName   = req.OwnerDisplayName,
+                UserId           = user.Id,
+                SeasonId         = req.SeasonId,
+                Name             = req.TeamName,
+                ShortCode        = req.ShortCode.ToUpper(),
+                ThemeColour      = req.ThemeColour,
+                OwnerDisplayName = req.OwnerDisplayName,
             };
             db.FantasyTeams.Add(team);
             await db.SaveChangesAsync();
@@ -149,28 +144,27 @@ public static class AuthEndpoints
                 user.Id, user.Username, team.Name,
                 team.ShortCode, team.ThemeColour,
                 team.OwnerDisplayName, team.SeasonId, token));
-        }).RequireAuthorization();
+        }).AllowAnonymous();
 
         // ── POST /api/auth/impersonate ───────────────────────────────────────
-        // AppOwner only — get a token scoped to another user
         group.MapPost("/impersonate", async (
             ImpersonateRequest req,
             AthenaXIDbContext db,
             TokenService tokenSvc,
             ClaimsPrincipal caller) =>
         {
-            var callerRole = caller.FindFirst("role")?.Value;
+            var callerRole = GetRole(caller);
             if (callerRole != nameof(UserRole.AppOwner))
                 return Results.Forbid();
 
-            var callerName = caller.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.UniqueName)?.Value
-                          ?? "AppOwner";
+            var callerName = caller.FindFirst(
+                System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.UniqueName)?.Value
+                ?? "AppOwner";
 
             var target = await db.Users.FindAsync(req.TargetUserId);
             if (target is null)
                 return Results.NotFound(new { error = "Target user not found." });
 
-            // Cannot impersonate another AppOwner
             if (target.Role == UserRole.AppOwner)
                 return Results.Forbid();
 
@@ -182,7 +176,7 @@ public static class AuthEndpoints
             return Results.Ok(new AuthResponse(
                 token, target.Username, target.Role.ToString(),
                 target.Id, target.TeamName, expiresAt));
-        }).RequireAuthorization();
+        }).AllowAnonymous();
 
         // ── POST /api/auth/change-password ───────────────────────────────────
         group.MapPost("/change-password", async (
@@ -190,7 +184,10 @@ public static class AuthEndpoints
             AthenaXIDbContext db,
             ClaimsPrincipal caller) =>
         {
-            var userId = Guid.Parse(caller.FindFirst("userId")!.Value);
+            var userIdClaim = caller.FindFirst("userId")?.Value;
+            if (userIdClaim is null) return Results.Unauthorized();
+
+            var userId = Guid.Parse(userIdClaim);
             var user   = await db.Users.FindAsync(userId);
             if (user is null) return Results.NotFound();
 
@@ -204,12 +201,11 @@ public static class AuthEndpoints
         }).RequireAuthorization();
 
         // ── GET /api/auth/users ──────────────────────────────────────────────
-        // AppOwner only — list all users
         group.MapGet("/users", async (
             AthenaXIDbContext db,
             ClaimsPrincipal caller) =>
         {
-            var callerRole = caller.FindFirst("role")?.Value;
+            var callerRole = GetRole(caller);
             if (callerRole != nameof(UserRole.AppOwner))
                 return Results.Forbid();
 
@@ -228,16 +224,15 @@ public static class AuthEndpoints
                 .ToListAsync();
 
             return Results.Ok(users);
-        }).RequireAuthorization();
+        }).AllowAnonymous();
 
         // ── PUT /api/auth/users/{id}/deactivate ──────────────────────────────
-        // AppOwner only
         group.MapPut("/users/{id:guid}/deactivate", async (
             Guid id,
             AthenaXIDbContext db,
             ClaimsPrincipal caller) =>
         {
-            var callerRole = caller.FindFirst("role")?.Value;
+            var callerRole = GetRole(caller);
             if (callerRole != nameof(UserRole.AppOwner))
                 return Results.Forbid();
 
@@ -249,6 +244,11 @@ public static class AuthEndpoints
             await db.SaveChangesAsync();
 
             return Results.Ok(new { message = $"{user.Username} deactivated." });
-        }).RequireAuthorization();
+        }).AllowAnonymous();
     }
+
+    // ── Shared role extractor — checks both custom "role" claim and ClaimTypes.Role ──
+    private static string? GetRole(ClaimsPrincipal caller) =>
+        caller.FindFirst("role")?.Value
+        ?? caller.FindFirst(ClaimTypes.Role)?.Value;
 }

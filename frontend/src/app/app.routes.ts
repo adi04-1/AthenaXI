@@ -13,31 +13,31 @@ export const routes: Routes = [
   },
   {
     path: 'leaderboard',
-    loadComponent: () => import('./leaderboard/leaderboard.component').then(m => m.LeaderboardComponent)
+    loadComponent: () => import('./leaderboard/leaderboard/leaderboard').then(m => m.Leaderboard)
   },
   {
     path: 'team',
-    loadComponent: () => import('./team-builder/team-builder.component').then(m => m.TeamBuilderComponent),
+    loadComponent: () => import('./team-builder/team-builder/team-builder').then(m => m.TeamBuilder),
     canActivate: [authGuard]
   },
   {
     path: 'auction',
-    loadComponent: () => import('./auction/room/auction-room.component').then(m => m.AuctionRoomComponent),
+    loadComponent: () => import('./auction/room/auction-room/auction-room').then(m => m.AuctionRoom),
     canActivate: [authGuard]
   },
   {
     path: 'transfers',
-    loadComponent: () => import('./transfers/transfers.component').then(m => m.TransfersComponent),
+    loadComponent: () => import('./transfers/transfers/transfers').then(m => m.Transfers),
     canActivate: [authGuard]
   },
   {
     path: 'admin',
-    loadComponent: () => import('./admin/admin.component').then(m => m.AdminComponent),
+    loadComponent: () => import('./admin/admin/admin').then(m => m.Admin),
     canActivate: [adminGuard]
   },
   {
     path: 'season-setup',
-    loadComponent: () => import('./season-setup/season-setup.component').then(m => m.SeasonSetupComponent),
+    loadComponent: () => import('./season-setup/season-setup/season-setup').then(m => m.SeasonSetup),
     canActivate: [adminGuard]
   },
   {

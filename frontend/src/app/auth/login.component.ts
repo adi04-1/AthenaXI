@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal ,OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -117,7 +117,7 @@ import { AuthService } from '../core/services/auth.service';
     .guest-link a { color: #C9A84C; text-decoration: none; }
   `]
 })
-export class LoginComponent {
+export class LoginComponent  implements OnInit{
   username = '';
   password = '';
   loading  = signal(false);
@@ -125,9 +125,12 @@ export class LoginComponent {
 
   constructor(private auth: AuthService, private router: Router) {
     // Redirect if already logged in
-    if (this.auth.isLoggedIn()) this.router.navigate(['/']);
+    //if (this.auth.isLoggedIn()) this.router.navigate(['/']);
   }
 
+  ngOnInit() {
+  if (this.auth.isLoggedIn()) this.router.navigate(['/']);
+}
   login() {
     if (!this.username || !this.password) return;
     this.loading.set(true);
