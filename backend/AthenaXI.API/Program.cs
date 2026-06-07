@@ -40,9 +40,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("AppOwnerOnly",    p => p.RequireClaim("role", "AppOwner"));
-    options.AddPolicy("AdminOrOwner",    p => p.RequireClaim("role", "AppOwner", "LeagueAdmin"));
-    options.AddPolicy("TeamOwnerOrAbove",p => p.RequireClaim("role", "AppOwner", "LeagueAdmin", "TeamOwner"));
+    options.AddPolicy("AppOwnerOnly",     p => p.RequireClaim("role", "AppOwner"));
+    options.AddPolicy("AdminOrOwner",     p => p.RequireClaim("role", "AppOwner", "LeagueAdmin"));
+    options.AddPolicy("TeamOwnerOrAbove", p => p.RequireClaim("role", "AppOwner", "LeagueAdmin", "TeamOwner"));
 });
 
 // ─── Hangfire ─────────────────────────────────────────────────────────────────
@@ -69,24 +69,17 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new() { Title = "AthenaXI API", Version = "v1" });
     c.AddSecurityDefinition("Bearer", new()
     {
-        Name        = "Authorization",
-        Type        = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-        Scheme      = "bearer",
+        Name         = "Authorization",
+        Type         = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme       = "bearer",
         BearerFormat = "JWT",
-        In          = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Paste your JWT token here"
+        In           = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description  = "Paste your JWT token here"
     });
     c.AddSecurityRequirement(new()
     {
         {
-            new()
-            {
-                Reference = new()
-                {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                    Id   = "Bearer"
-                }
-            },
+            new() { Reference = new() { Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme, Id = "Bearer" } },
             []
         }
     });
@@ -108,7 +101,7 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "AthenaXI API v1");
-    c.RoutePrefix = string.Empty;
+    c.RoutePrefix = "swagger";
 });
 
 app.UseCors("AllowAngular");
@@ -116,22 +109,26 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseHangfireDashboard("/hangfire");
 
-// ─── Routes ───────────────────────────────────────────────────────────────────
+// ─── Health ───────────────────────────────────────────────────────────────────
 app.MapGet("/health", () => Results.Ok(new
 {
     status    = "healthy",
     app       = "AthenaXI",
-    version   = "0.3.0",
+    version   = "0.5.0",
     timestamp = DateTime.UtcNow
 })).AllowAnonymous();
 
-// Auth — Day 3 ✅
-app.MapAuthEndpoints();
+// ─── Routes — Days 3–9 ────────────────────────────────────────────────────────
+app.MapAuthEndpoints();           // Day 3
+app.MapSeasonEndpoints();         // Day 5
+app.MapTeamEndpoints();           // Day 6
+app.MapPlayerEndpoints();         // Day 7
+app.MapAuctionEndpoints();        // Day 8
+app.MapNotificationEndpoints();   // Day 9
+app.MapLeaderboardEndpoints();    // Day 9
 
-// Coming soon:
-// app.MapSeasonEndpoints();   // Day 5
-// app.MapTeamEndpoints();     // Day 6
-// app.MapAuctionEndpoints();  // Day 10
-// app.MapLeaderboardEndpoints(); // Day 28
+// Coming:
+// app.MapTransferEndpoints();    // Day 21
+// app.MapSyncEndpoints();        // Day 24
 
 app.Run();
