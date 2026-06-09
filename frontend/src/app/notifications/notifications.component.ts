@@ -9,7 +9,7 @@ import { NotificationService } from '../core/services/notification.service';
   template: `
     <div class="page">
       <div class="page-header">
-        <h1 class="page-title">��� Notifications</h1>
+        <h1 class="page-title">📢 Notifications</h1>
         @if (notifs().length > 0) {
           <button class="btn-mark" (click)="markAllRead()">Mark all read</button>
         }

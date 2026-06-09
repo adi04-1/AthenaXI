@@ -14,7 +14,7 @@ import { AuthService } from '../core/services/auth.service';
 
         <!-- Logo -->
         <div class="logo">
-          <span class="logo-icon">���️</span>
+          <span class="logo-icon">₳</span>
           <h1 class="logo-text">AthenaXI</h1>
           <p class="logo-sub">Fantasy IPL — Strategy of the Gods</p>
         </div>

@@ -13,7 +13,7 @@ import { NotificationService } from './core/services/notification.service';
       @if (auth.isLoggedIn()) {
         <!-- Top bar -->
         <div class="topbar">
-          <span class="brand">���️ AthenaXI</span>
+          <span class="brand">₳ AthenaXI</span>
           <div class="topbar-right">
             <span class="user-chip">
               {{ auth.profile()?.teamName ?? auth.profile()?.username }}
@@ -22,7 +22,7 @@ import { NotificationService } from './core/services/notification.service';
             @if (auth.isAdmin()) {
               <a routerLink="/admin" class="topbar-link">⚙️ Admin</a>
             }
-            <button class="btn-logout" (click)="auth.logout()">Logout</button>
+            <button class="btn-logout" (click)="auth.logout()">➜] Logout</button>
           </div>
         </div>
       }
@@ -36,19 +36,19 @@ import { NotificationService } from './core/services/notification.service';
       @if (auth.isLoggedIn()) {
         <nav class="bottom-nav">
           <a routerLink="/leaderboard" class="nav-item">
-            <span>���</span><span class="nav-label">Leaderboard</span>
+            <span>🥇 </span><span class="nav-label">Leaderboard</span>
           </a>
           <a routerLink="/auction" class="nav-item">
-            <span>���</span><span class="nav-label">Auction</span>
+            <span>👨‍⚖ </span><span class="nav-label">Auction</span>
           </a>
           <a routerLink="/team" class="nav-item">
-            <span>���</span><span class="nav-label">My Team</span>
+            <span>👥 </span><span class="nav-label">My Team</span>
           </a>
           <a routerLink="/transfers" class="nav-item">
-            <span>���</span><span class="nav-label">Transfers</span>
+            <span>🔄 </span><span class="nav-label">Transfers</span>
           </a>
           <a routerLink="/notifications" class="nav-item">
-            <span>���</span>
+            <span>🔔 </span>
             @if (notifSvc.unreadCount() > 0) {
               <span class="badge">{{ notifSvc.unreadCount() }}</span>
             }

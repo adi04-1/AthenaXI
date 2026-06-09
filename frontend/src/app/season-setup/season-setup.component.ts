@@ -12,7 +12,10 @@ import { TeamService } from '../core/services/team.service';
   template: `
     <div class="page">
       <div class="wizard-header">
-        <h1 class="page-title">���️ Season Setup</h1>
+        <h1 class="page-title"> Season Setup </h1>
+          <h1 class="page-title">
+            <!-- Season Setup -->
+          </h1>
         <div class="steps">
           @for (s of steps; track s.num) {
             <div class="step" [class.active]="step() === s.num" [class.done]="step() > s.num">
@@ -184,7 +187,7 @@ import { TeamService } from '../core/services/team.service';
       <!-- Step 5 — Done -->
       @if (step() === 5) {
         <div class="card done-card">
-          <span class="done-icon">���️</span>
+          <span class="done-icon">✅</span>
           <h2>Season Ready!</h2>
           <p>{{ form.name }} is set up with {{ addedTeams().length }} teams.</p>
           <p class="hint">Next: Upload player pool and auction order from Admin → Auction Control.</p>

@@ -15,14 +15,14 @@ import { AuthService } from '../../core/services/auth.service';
       <!-- Header -->
       <div class="auction-header">
         <div class="header-left">
-          <span class="logo">ÌøõÔ∏è AthenaXI</span>
+          <span class="logo">‚Ç≥ AthenaXI</span>
           <span class="badge" [class.live]="session()?.status === 'InProgress'">
-            {{ session()?.status === 'InProgress' ? 'Ì¥¥ LIVE' : session()?.status ?? 'Loading...' }}
+            {{ session()?.status === 'InProgress' ? 'ÔøΩÔøΩÔøΩ LIVE' : session()?.status ?? 'Loading...' }}
           </span>
         </div>
         <div class="header-stats">
           <span>‚úÖ Sold: {{ session()?.soldCount ?? 0 }}</span>
-          <span>Ì¥Å Unsold: {{ session()?.unsoldCount ?? 0 }}</span>
+          <span>ÔøΩÔøΩÔøΩ Unsold: {{ session()?.unsoldCount ?? 0 }}</span>
           <span>‚è≥ Pending: {{ session()?.pendingCount ?? 0 }}</span>
         </div>
       </div>
@@ -38,12 +38,12 @@ import { AuthService } from '../../core/services/auth.service';
               <div class="player-meta">
                 <span class="ipl-team">{{ player.iplTeam }}</span>
                 <span class="role-badge" [class]="player.role.toLowerCase()">{{ player.role }}</span>
-                @if (player.isOverseas) { <span class="tag overseas">Ìºç Overseas</span> }
+                @if (player.isOverseas) { <span class="tag overseas">ÔøΩÔøΩÔøΩ Overseas</span> }
                 @if (player.isUncapped) { <span class="tag uncapped">‚≠ê Uncapped</span> }
               </div>
               <div class="base-price">Base: ‚Çπ{{ player.basePriceCr }}Cr</div>
               @if (player.rtmTeam) {
-                <div class="rtm-badge">Ì¥Å RTM ‚Äî {{ player.rtmTeam }}</div>
+                <div class="rtm-badge">ÔøΩÔøΩÔøΩ RTM ‚Äî {{ player.rtmTeam }}</div>
               }
 
               <!-- Current Bid -->
@@ -51,7 +51,7 @@ import { AuthService } from '../../core/services/auth.service';
                 <div class="bid-amount">‚Çπ{{ player.currentBidCr }}Cr</div>
                 @if (player.currentLeaderTeam) {
                   <div class="bid-leader" [style.color]="player.currentLeaderColour">
-                    Ì≥£ {{ player.currentLeaderTeam }}
+                    ÔøΩÔøΩÔøΩ {{ player.currentLeaderTeam }}
                   </div>
                 } @else {
                   <div class="bid-leader muted">No bids yet</div>
@@ -78,8 +78,8 @@ import { AuthService } from '../../core/services/auth.service';
                     <button class="btn-bid" (click)="quickBid(player)">Place Bid</button>
                   </div>
                   <div class="action-row">
-                    <button class="btn-sold" (click)="markSold(player)">Ì¥® SOLD</button>
-                    <button class="btn-unsold" (click)="markUnsold(player)">‚ùå UNSOLD</button>
+                    <button class="btn-sold" (click)="markSold(player)">‚úÖ SOLD</button>
+                    <button class="btn-unsold" (click)="markUnsold(player)"> ‚õî UNSOLD</button>
                     <button class="btn-timer" (click)="toggleTimer()">
                       {{ timerSeconds() !== null ? '‚èπ Stop Timer' : '‚ñ∂Ô∏è Start Timer' }}
                     </button>
@@ -91,14 +91,14 @@ import { AuthService } from '../../core/services/auth.service';
             <div class="no-player">
               @if (session()?.status === 'NotStarted') {
                 <div class="waiting">
-                  <p>ÌøõÔ∏è Auction not started yet</p>
+                  <p>‚Ç≥ Auction not started yet</p>
                   @if (isAdmin()) {
                     <button class="btn-start" (click)="startAuction()">‚ñ∂Ô∏è Start Auction</button>
                   }
                 </div>
               } @else if (session()?.status === 'Completed') {
                 <div class="waiting">
-                  <p>ÌøÜ Auction Complete!</p>
+                  <p>‚Ç≥ Auction Complete!</p>
                   <p class="sub">All squads have been finalised.</p>
                 </div>
               } @else {
@@ -110,7 +110,7 @@ import { AuthService } from '../../core/services/auth.service';
 
         <!-- Teams Standings Panel -->
         <div class="standings-section">
-          <h2 class="standings-title">Ì≤∞ Team Budgets</h2>
+          <h2 class="standings-title">üí∞ Team Budgets</h2>
           <div class="standings-list">
             @for (team of standings(); track team.teamId) {
               <div class="standing-row" [style.border-left-color]="team.themeColour">
@@ -122,7 +122,7 @@ import { AuthService } from '../../core/services/auth.service';
                   <span class="budget" [class.low]="team.budgetRemainingCr < 10">
                     ‚Çπ{{ team.budgetRemainingCr }}Cr
                   </span>
-                  <span class="players">Ì±§ {{ team.playersAcquired }}</span>
+                  <span class="players">üë• {{ team.playersAcquired }}</span>
                 </div>
               </div>
             }

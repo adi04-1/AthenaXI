@@ -10,7 +10,7 @@ import { LeaderboardService } from '../core/services/leaderboard.service';
   template: `
     <div class="page">
       <div class="page-header">
-        <h1 class="page-title">��� Leaderboard</h1>
+        <h1 class="page-title">🥇🏆🥈🎖️🥉 Leaderboard</h1>
         <span class="season-tag">IPL 2025</span>
       </div>
       @if (loading()) {
@@ -20,7 +20,7 @@ import { LeaderboardService } from '../core/services/leaderboard.service';
           @for (row of rows(); track row.teamId) {
             <div class="team-row" [style.border-left-color]="row.themeColour">
               <div class="rank">
-                {{ row.rank === 1 ? '���' : row.rank === 2 ? '���' : row.rank === 3 ? '���' : '#' + row.rank }}
+                {{ row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : '#' + row.rank }}
               </div>
               <div class="team-info">
                 <span class="team-code" [style.color]="row.themeColour">{{ row.shortCode }}</span>
