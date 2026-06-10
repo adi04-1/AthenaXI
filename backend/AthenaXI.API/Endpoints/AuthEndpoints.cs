@@ -21,7 +21,7 @@ public static class AuthEndpoints
             TokenService tokenSvc,
             ClaimsPrincipal caller) =>
         {
-            var callerRole = GetRole(caller);
+            var callerRole = caller.FindFirst(ClaimTypes.Role)?.Value;
             if (callerRole != nameof(UserRole.AppOwner))
                 return Results.Forbid();
 
@@ -99,10 +99,12 @@ public static class AuthEndpoints
             TokenService tokenSvc,
             ClaimsPrincipal caller) =>
         {
-            var callerRole = GetRole(caller);
-            if (callerRole != nameof(UserRole.AppOwner) &&
-                callerRole != nameof(UserRole.LeagueAdmin))
+            var callerRole = caller.FindFirst(ClaimTypes.Role)?.Value;
+            if (!caller.IsInRole(nameof(UserRole.AppOwner)) &&
+                !caller.IsInRole(nameof(UserRole.LeagueAdmin)))
+            {
                 return Results.Forbid();
+            }
 
             if (await db.Users.AnyAsync(u => u.Username == req.Username.Trim().ToLower()))
                 return Results.Conflict(new { error = "Username already taken." });
@@ -153,7 +155,7 @@ public static class AuthEndpoints
             TokenService tokenSvc,
             ClaimsPrincipal caller) =>
         {
-            var callerRole = GetRole(caller);
+            var callerRole = caller.FindFirst(ClaimTypes.Role)?.Value;
             if (callerRole != nameof(UserRole.AppOwner))
                 return Results.Forbid();
 
@@ -205,7 +207,7 @@ public static class AuthEndpoints
             AthenaXIDbContext db,
             ClaimsPrincipal caller) =>
         {
-            var callerRole = GetRole(caller);
+            var callerRole = caller.FindFirst(ClaimTypes.Role)?.Value;
             if (callerRole != nameof(UserRole.AppOwner))
                 return Results.Forbid();
 
@@ -232,7 +234,7 @@ public static class AuthEndpoints
             AthenaXIDbContext db,
             ClaimsPrincipal caller) =>
         {
-            var callerRole = GetRole(caller);
+            var callerRole = caller.FindFirst(ClaimTypes.Role)?.Value;
             if (callerRole != nameof(UserRole.AppOwner))
                 return Results.Forbid();
 

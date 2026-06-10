@@ -22,7 +22,7 @@ import { AuthService } from '../../core/services/auth.service';
         </div>
         <div class="header-stats">
           <span>✅ Sold: {{ session()?.soldCount ?? 0 }}</span>
-          <span>��� Unsold: {{ session()?.unsoldCount ?? 0 }}</span>
+          <span> ⛔ Unsold: {{ session()?.unsoldCount ?? 0 }}</span>
           <span>⏳ Pending: {{ session()?.pendingCount ?? 0 }}</span>
         </div>
       </div>

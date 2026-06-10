@@ -187,7 +187,7 @@ public static class TeamEndpoints
             ClaimsPrincipal caller) =>
         {
             var userId     = Guid.Parse(caller.FindFirst("userId")!.Value);
-            var callerRole = caller.FindFirst("role")?.Value;
+            var callerRole = caller.FindFirst(ClaimTypes.Role)?.Value;
 
             var team = await db.FantasyTeams.FindAsync(id);
             if (team is null) return Results.NotFound();
@@ -322,7 +322,7 @@ public static class TeamEndpoints
 
     private static bool IsAdminOrOwner(ClaimsPrincipal caller)
     {
-        var role = caller.FindFirst("role")?.Value;
-        return role == nameof(UserRole.AppOwner) || role == nameof(UserRole.LeagueAdmin);
+       return caller.IsInRole(nameof(UserRole.AppOwner))
+        || caller.IsInRole(nameof(UserRole.LeagueAdmin));
     }
 }

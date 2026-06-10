@@ -30,13 +30,22 @@ public static class SeasonEndpoints
 
             var season = new Season
             {
-                Name            = req.Name.Trim(),
-                Year            = req.Year,
-                Mode            = mode,
-                Status          = SeasonStatus.Upcoming,
-                AuctionDate     = req.AuctionDate,
-                SeasonStartDate = req.SeasonStartDate,
-                SeasonEndDate   = req.SeasonEndDate,
+                Name = req.Name.Trim(),
+                Year = req.Year,
+                Mode = mode,
+                Status = SeasonStatus.Upcoming,
+
+                AuctionDate = req.AuctionDate.HasValue
+                    ? DateTime.SpecifyKind(req.AuctionDate.Value, DateTimeKind.Utc)
+                    : null,
+
+                            SeasonStartDate = req.SeasonStartDate.HasValue
+                    ? DateTime.SpecifyKind(req.SeasonStartDate.Value, DateTimeKind.Utc)
+                    : null,
+
+                            SeasonEndDate = req.SeasonEndDate.HasValue
+                    ? DateTime.SpecifyKind(req.SeasonEndDate.Value, DateTimeKind.Utc)
+                    : null
             };
 
             // Attach default SeasonConfig (My11Circle T20 defaults)
@@ -218,14 +227,18 @@ public static class SeasonEndpoints
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static bool IsAdminOrOwner(ClaimsPrincipal caller)
-    {
-        var role = caller.FindFirst("role")?.Value;
-        return role == nameof(UserRole.AppOwner) || role == nameof(UserRole.LeagueAdmin);
-    }
+{
+    var role = caller.FindFirst(ClaimTypes.Role)?.Value;
 
-    private static bool IsAppOwner(ClaimsPrincipal caller) =>
-        caller.FindFirst("role")?.Value == nameof(UserRole.AppOwner);
+    return role == nameof(UserRole.AppOwner)
+        || role == nameof(UserRole.LeagueAdmin);
+}
 
+private static bool IsAppOwner(ClaimsPrincipal caller)
+{
+    return caller.FindFirst(ClaimTypes.Role)?.Value
+        == nameof(UserRole.AppOwner);
+}
     private static SeasonResponse ToSeasonResponse(Season s) => new(
         s.Id, s.Name, s.Year, s.Mode.ToString(), s.Status.ToString(),
         0, true,

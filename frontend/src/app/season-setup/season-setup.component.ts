@@ -6,7 +6,7 @@ import { SeasonService } from '../core/services/season.service';
 import { TeamService } from '../core/services/team.service';
 import { AuctionService } from '../core/services/auction.service';
 import { PlayerService } from '../core/services/player.service';
-import * as XLSX from 'xlsx';
+// import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-season-setup',
@@ -356,9 +356,9 @@ export class SeasonSetupComponent implements OnInit {
   ]);
 
   modes = [
-    { value: 'FreshAuction',          icon: '���', label: 'Fresh Auction',          desc: 'All players auctioned. No retentions.' },
-    { value: 'AuctionWithRetentions', icon: '���', label: 'Auction with Retentions', desc: '3-sheet upload: players + order + retentions.' },
-    { value: 'DirectAllocation',      icon: '���', label: 'Direct Allocation',       desc: 'No auction. Upload final rosters.' },
+    { value: 'FreshAuction',          icon: '🆕', label: 'Fresh Auction',          desc: 'All players auctioned. No retentions.' },
+    { value: 'AuctionWithRetentions', icon: '🔐', label: 'Auction with Retentions', desc: '3-sheet upload: players + order + retentions.' },
+    { value: 'DirectAllocation',      icon: '📝', label: 'Direct Allocation',       desc: 'No auction. Upload final rosters.' },
   ];
 
   form = { name: '', year: new Date().getFullYear(), mode: '', auctionDate: '', seasonStartDate: '', seasonEndDate: '' };
@@ -457,57 +457,57 @@ export class SeasonSetupComponent implements OnInit {
     this.saving.set(true); this.error.set('');
     const reader = new FileReader();
     reader.onload = (e: any) => {
-      try {
-        const wb = XLSX.read(e.target.result, { type: 'array' });
+      // try {
+      //   const wb = XLSX.read(e.target.result, { type: 'array' });
 
-        if (this.form.mode === 'DirectAllocation') {
-          // Parse roster sheet
-          const sheet = wb.Sheets[wb.SheetNames[0]];
-          const rows: any[] = XLSX.utils.sheet_to_json(sheet);
-          this.playerSvc.uploadDirectAllocation(seasonId, rows).subscribe({
-            next: r => { this.uploadResult.set(r); this.saving.set(false); this.step.set(6); },
-            error: e => { this.error.set(e?.error?.error ?? 'Upload failed.'); this.saving.set(false); }
-          });
-        } else {
-          // Sheet 1: Player Pool
-          const poolSheet = wb.Sheets['Player Pool'] ?? wb.Sheets[wb.SheetNames[0]];
-          const poolRows: any[] = XLSX.utils.sheet_to_json(poolSheet);
+      //   if (this.form.mode === 'DirectAllocation') {
+      //     // Parse roster sheet
+      //     const sheet = wb.Sheets[wb.SheetNames[0]];
+      //     const rows: any[] = XLSX.utils.sheet_to_json(sheet);
+      //     this.playerSvc.uploadDirectAllocation(seasonId, rows).subscribe({
+      //       next: r => { this.uploadResult.set(r); this.saving.set(false); this.step.set(6); },
+      //       error: e => { this.error.set(e?.error?.error ?? 'Upload failed.'); this.saving.set(false); }
+      //     });
+      //   } else {
+      //     // Sheet 1: Player Pool
+      //     const poolSheet = wb.Sheets['Player Pool'] ?? wb.Sheets[wb.SheetNames[0]];
+      //     const poolRows: any[] = XLSX.utils.sheet_to_json(poolSheet);
 
-          // Sheet 2: Auction Order
-          const orderSheet = wb.Sheets['Auction Order'] ?? wb.Sheets[wb.SheetNames[1]];
-          const orderRows: any[] = XLSX.utils.sheet_to_json(orderSheet);
+      //     // Sheet 2: Auction Order
+      //     const orderSheet = wb.Sheets['Auction Order'] ?? wb.Sheets[wb.SheetNames[1]];
+      //     const orderRows: any[] = XLSX.utils.sheet_to_json(orderSheet);
 
-          // Upload players first, then auction order
-          this.playerSvc.uploadPlayers(this.normalizePoolRows(poolRows)).subscribe({
-            next: poolResult => {
-              this.playerSvc.uploadAuctionOrder(seasonId, this.normalizeOrderRows(orderRows)).subscribe({
-                next: orderResult => {
-                  this.sessionId.set(orderResult.auctionSessionId);
-                  this.uploadResult.set({ ...poolResult, auctionSessionId: orderResult.auctionSessionId });
-                  this.saving.set(false);
+      //     // Upload players first, then auction order
+      //     this.playerSvc.uploadPlayers(this.normalizePoolRows(poolRows)).subscribe({
+      //       next: poolResult => {
+      //         this.playerSvc.uploadAuctionOrder(seasonId, this.normalizeOrderRows(orderRows)).subscribe({
+      //           next: orderResult => {
+      //             this.sessionId.set(orderResult.auctionSessionId);
+      //             this.uploadResult.set({ ...poolResult, auctionSessionId: orderResult.auctionSessionId });
+      //             this.saving.set(false);
 
-                  // Handle retentions if present
-                  if (this.form.mode === 'AuctionWithRetentions' && wb.SheetNames.length >= 3) {
-                    const retSheet = wb.Sheets['Retentions'] ?? wb.Sheets[wb.SheetNames[2]];
-                    const retRows: any[] = XLSX.utils.sheet_to_json(retSheet);
-                    this.teamSvc.uploadRetentions({ seasonId, retentions: this.normalizeRetentionRows(retRows) }).subscribe({
-                      next: () => this.step.set(6),
-                      error: () => this.step.set(6) // non-blocking
-                    });
-                  } else {
-                    this.step.set(6);
-                  }
-                },
-                error: e => { this.error.set(e?.error?.error ?? 'Auction order upload failed.'); this.saving.set(false); }
-              });
-            },
-            error: e => { this.error.set(e?.error?.error ?? 'Player upload failed.'); this.saving.set(false); }
-          });
-        }
-      } catch {
-        this.error.set('Failed to read Excel file. Make sure it is a valid .xlsx file.');
-        this.saving.set(false);
-      }
+      //             // Handle retentions if present
+      //             if (this.form.mode === 'AuctionWithRetentions' && wb.SheetNames.length >= 3) {
+      //               const retSheet = wb.Sheets['Retentions'] ?? wb.Sheets[wb.SheetNames[2]];
+      //               const retRows: any[] = XLSX.utils.sheet_to_json(retSheet);
+      //               this.teamSvc.uploadRetentions({ seasonId, retentions: this.normalizeRetentionRows(retRows) }).subscribe({
+      //                 next: () => this.step.set(6),
+      //                 error: () => this.step.set(6) // non-blocking
+      //               });
+      //             } else {
+      //               this.step.set(6);
+      //             }
+      //           },
+      //           error: e => { this.error.set(e?.error?.error ?? 'Auction order upload failed.'); this.saving.set(false); }
+      //         });
+      //       },
+      //       error: e => { this.error.set(e?.error?.error ?? 'Player upload failed.'); this.saving.set(false); }
+      //     });
+      //   }
+      // } catch {
+      //   this.error.set('Failed to read Excel file. Make sure it is a valid .xlsx file.');
+      //   this.saving.set(false);
+      // }
     };
     reader.readAsArrayBuffer(file);
   }

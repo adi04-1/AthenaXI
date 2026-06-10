@@ -8,7 +8,10 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Hangfire;
 using Hangfire.PostgreSql;
+using System.Security.Claims;
 
+System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
 var builder = WebApplication.CreateBuilder(args);
 
 // ─── Database ─────────────────────────────────────────────────────────────────
@@ -117,6 +120,13 @@ app.MapGet("/health", () => Results.Ok(new
     version   = "0.5.0",
     timestamp = DateTime.UtcNow
 })).AllowAnonymous();
+
+// ── DEBUG — remove after fixing ───────────────────────────────────────────
+app.MapGet("/debug/claims", (ClaimsPrincipal caller) =>
+{
+    var claims = caller.Claims.Select(c => new { c.Type, c.Value }).ToList();
+    return Results.Ok(claims);
+}).AllowAnonymous();
 
 // ─── Routes — Days 3–9 ────────────────────────────────────────────────────────
 app.MapAuthEndpoints();           // Day 3
