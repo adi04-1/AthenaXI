@@ -388,3 +388,20 @@ public class RetainedPlayer
     public Player Player { get; set; } = null!;
     public Season Season { get; set; } = null!;
 }
+
+// ─── AUCTION INVITE ───────────────────────────────────────────────────────────
+
+public class AuctionInvite
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid AuctionSessionId { get; set; }
+    public Guid FantasyTeamId { get; set; }
+    public Guid UserId { get; set; }
+    public AuctionInviteStatus Status { get; set; } = AuctionInviteStatus.Pending;
+    public DateTime SentAt { get; set; } = DateTime.UtcNow;
+    public DateTime? RespondedAt { get; set; }
+
+    public AuctionSession AuctionSession { get; set; } = null!;
+    public FantasyTeam FantasyTeam { get; set; } = null!;
+    public User User { get; set; } = null!;
+}

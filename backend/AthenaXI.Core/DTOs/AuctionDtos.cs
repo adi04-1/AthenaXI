@@ -101,3 +101,34 @@ public record AuctionResultResponse(
     bool WentUnsold,
     DateTime ResolvedAt
 );
+
+// ─── Invite DTOs ──────────────────────────────────────────────────────────────
+
+public record AuctionInviteResponse(
+    Guid InviteId,
+    Guid AuctionSessionId,
+    Guid FantasyTeamId,
+    string TeamName,
+    string ShortCode,
+    string ThemeColour,
+    string Status,
+    DateTime SentAt,
+    DateTime? RespondedAt
+);
+
+public record RespondToInviteRequest(
+    Guid InviteId,
+    bool Accept           // true = Accept, false = Decline
+);
+
+public record AuctionLobbyResponse(
+    Guid SessionId,
+    string SeasonName,
+    string AuctionStatus,
+    int TotalTeams,
+    int AcceptedCount,
+    int PendingCount,
+    int DeclinedCount,
+    bool CanStart,
+    List<AuctionInviteResponse> Invites
+);

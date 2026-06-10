@@ -1,9 +1,9 @@
+using System.Security.Claims;
 using AthenaXI.Core.DTOs;
 using AthenaXI.Core.Enums;
 using AthenaXI.Core.Models;
 using AthenaXI.Data;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace AthenaXI.API.Endpoints;
 
@@ -568,8 +568,153 @@ public static class AuctionEndpoints
 
             return Results.Ok(response);
         }).AllowAnonymous();
-    }
+        // ── POST /api/auction/{sessionId}/send-invites ────────────────────────
+        // Admin sends invite notifications to all teams in the season
+        group.MapPost("/{sessionId:guid}/send-invites", async (
+            Guid sessionId,
+            AthenaXIDbContext db,
+            ClaimsPrincipal caller) =>
+        {
+            if (!IsAdminOrOwner(caller)) return Results.Forbid();
 
+            var session = await db.AuctionSessions
+                .Include(a => a.Season)
+                .FirstOrDefaultAsync(a => a.Id == sessionId);
+            if (session is null) return Results.NotFound();
+
+            var teams = await db.FantasyTeams
+                .Where(t => t.SeasonId == session.SeasonId && t.IsActive)
+                .ToListAsync();
+
+            if (!teams.Any())
+                return Results.BadRequest(new { error = "No teams registered for this season." });
+
+            // Remove existing invites and resend
+            var existing = await db.AuctionInvites
+                .Where(i => i.AuctionSessionId == sessionId).ToListAsync();
+            db.AuctionInvites.RemoveRange(existing);
+
+            var invites = teams.Select(t => new AuctionInvite
+            {
+                AuctionSessionId = sessionId,
+                FantasyTeamId    = t.Id,
+                UserId           = t.UserId,
+                Status           = AuctionInviteStatus.Pending,
+                SentAt           = DateTime.UtcNow,
+            }).ToList();
+
+            db.AuctionInvites.AddRange(invites);
+
+            // Send notification to each team
+            foreach (var team in teams)
+            {
+                db.Notifications.Add(new Notification
+                {
+                    UserId = team.UserId,
+                    Title  = "🔨 Auction Invite",
+                    Body   = $"You're invited to join the {session.Season.Name} auction. Open the app to accept!",
+                    Type   = NotificationType.AuctionStartingSoon,
+                });
+            }
+
+            // Update season status
+            session.Season.Status = SeasonStatus.ReadyForAuction;
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { message = $"Invites sent to {teams.Count} teams.", count = teams.Count });
+        }).AllowAnonymous();
+
+        // ── GET /api/auction/{sessionId}/lobby ────────────────────────────────
+        // Get lobby state — invite statuses, accepted count, can-start flag
+        group.MapGet("/{sessionId:guid}/lobby", async (
+            Guid sessionId,
+            AthenaXIDbContext db) =>
+        {
+            var session = await db.AuctionSessions
+                .Include(a => a.Season)
+                .FirstOrDefaultAsync(a => a.Id == sessionId);
+            if (session is null) return Results.NotFound();
+
+            var invites = await db.AuctionInvites
+                .Include(i => i.FantasyTeam)
+                .Where(i => i.AuctionSessionId == sessionId)
+                .ToListAsync();
+
+            var accepted  = invites.Count(i => i.Status == AuctionInviteStatus.Accepted);
+            var pending   = invites.Count(i => i.Status == AuctionInviteStatus.Pending);
+            var declined  = invites.Count(i => i.Status == AuctionInviteStatus.Declined);
+            var canStart  = accepted >= 1; // min 1 team accepted
+
+            var inviteResponses = invites.Select(i => new AuctionInviteResponse(
+                i.Id, i.AuctionSessionId, i.FantasyTeamId,
+                i.FantasyTeam.Name, i.FantasyTeam.ShortCode,
+                i.FantasyTeam.ThemeColour, i.Status.ToString(),
+                i.SentAt, i.RespondedAt)).ToList();
+
+            return Results.Ok(new AuctionLobbyResponse(
+                session.Id, session.Season.Name, session.Status.ToString(),
+                invites.Count, accepted, pending, declined,
+                canStart, inviteResponses));
+        }).AllowAnonymous();
+
+        // ── POST /api/auction/invite/respond ─────────────────────────────────
+        // Team owner accepts or declines invite
+        group.MapPost("/invite/respond", async (
+            RespondToInviteRequest req,
+            AthenaXIDbContext db,
+            ClaimsPrincipal caller) =>
+        {
+            var userId = Guid.Parse(caller.FindFirst("userId")!.Value);
+
+            var invite = await db.AuctionInvites
+                .Include(i => i.FantasyTeam)
+                .FirstOrDefaultAsync(i => i.Id == req.InviteId && i.UserId == userId);
+
+            if (invite is null)
+                return Results.NotFound(new { error = "Invite not found." });
+
+            invite.Status      = req.Accept ? AuctionInviteStatus.Accepted : AuctionInviteStatus.Declined;
+            invite.RespondedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new
+            {
+                message = req.Accept
+                    ? $"✅ {invite.FantasyTeam.Name} joined the auction!"
+                    : $"❌ {invite.FantasyTeam.Name} declined the invite.",
+                status  = invite.Status.ToString()
+            });
+        }).RequireAuthorization();
+
+        // ── GET /api/auction/my-invite/{seasonId} ─────────────────────────────
+        // Team owner checks their own invite status
+        group.MapGet("/my-invite/{seasonId:guid}", async (
+            Guid seasonId,
+            AthenaXIDbContext db,
+            ClaimsPrincipal caller) =>
+        {
+            var userId = Guid.Parse(caller.FindFirst("userId")!.Value);
+
+            var team = await db.FantasyTeams
+                .FirstOrDefaultAsync(t => t.UserId == userId && t.SeasonId == seasonId);
+            if (team is null) return Results.NotFound(new { error = "No team found." });
+
+            var session = await db.AuctionSessions
+                .FirstOrDefaultAsync(a => a.SeasonId == seasonId);
+            if (session is null) return Results.NotFound(new { error = "No auction session found." });
+
+            var invite = await db.AuctionInvites
+                .FirstOrDefaultAsync(i => i.AuctionSessionId == session.Id && i.FantasyTeamId == team.Id);
+
+            if (invite is null) return Results.Ok(new { status = "NoInvite" });
+
+            return Results.Ok(new AuctionInviteResponse(
+                invite.Id, invite.AuctionSessionId, invite.FantasyTeamId,
+                team.Name, team.ShortCode, team.ThemeColour,
+                invite.Status.ToString(), invite.SentAt, invite.RespondedAt));
+        }).RequireAuthorization();
+    }
+    
     // ── Helper — advance to next pending player ───────────────────────────────
     private static async Task AdvanceToNextPlayer(AuctionSession session, AthenaXIDbContext db)
     {

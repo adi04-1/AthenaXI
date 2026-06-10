@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
-using AthenaXI.Core.Models;
 using AthenaXI.Core.Enums;
+using AthenaXI.Core.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace AthenaXI.Data;
 
@@ -18,6 +18,7 @@ public class AthenaXIDbContext(DbContextOptions<AthenaXIDbContext> options) : Db
     public DbSet<AuctionPlayerSlot> AuctionPlayerSlots => Set<AuctionPlayerSlot>();
     public DbSet<AuctionBid> AuctionBids => Set<AuctionBid>();
     public DbSet<AuctionResult> AuctionResults => Set<AuctionResult>();
+    public DbSet<AuctionInvite> AuctionInvites => Set<AuctionInvite>();
     public DbSet<MatchEvent> MatchEvents => Set<MatchEvent>();
     public DbSet<PlayerMatchPoints> PlayerMatchPoints => Set<PlayerMatchPoints>();
     public DbSet<TransferLog> TransferLogs => Set<TransferLog>();
@@ -184,7 +185,15 @@ public class AthenaXIDbContext(DbContextOptions<AthenaXIDbContext> options) : Db
              .HasForeignKey(r => r.PlayerId)
              .OnDelete(DeleteBehavior.Restrict);
         });
-
+        // ── AuctionInvite ──────────────────────────────────────────────────────
+        mb.Entity<AuctionInvite>(e =>
+        {
+            e.HasIndex(i => new { i.AuctionSessionId, i.FantasyTeamId }).IsUnique();
+            e.Property(i => i.Status).HasConversion<string>();
+            e.HasOne(i => i.AuctionSession).WithMany().HasForeignKey(i => i.AuctionSessionId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(i => i.FantasyTeam).WithMany().HasForeignKey(i => i.FantasyTeamId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(i => i.User).WithMany().HasForeignKey(i => i.UserId).OnDelete(DeleteBehavior.Restrict);
+        });
         // ── MatchEvent ────────────────────────────────────────────────────────
         mb.Entity<MatchEvent>(e =>
         {

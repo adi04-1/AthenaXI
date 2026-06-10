@@ -18,4 +18,8 @@ export class AuctionService {
   recallUnsold(slotId: string) { return this.http.post<any>(`${this.api}/auction/recall-unsold/${slotId}`, {}); }
   adminCorrect(body: any) { return this.http.post<any>(`${this.api}/auction/admin-correct`, body); }
   completeAuction(sessionId: string) { return this.http.post<any>(`${this.api}/auction/${sessionId}/complete`, {}); }
+  sendInvites(sessionId: string) { return this.http.post<any>(`${this.api}/auction/${sessionId}/send-invites`, {}); }
+  getLobby(sessionId: string) { return this.http.get<any>(`${this.api}/auction/${sessionId}/lobby`); }
+  respondToInvite(body: { inviteId: string; accept: boolean }) { return this.http.post<any>(`${this.api}/auction/invite/respond`, body); }
+  getMyInvite(seasonId: string) { return this.http.get<any>(`${this.api}/auction/my-invite/${seasonId}`); }
 }
