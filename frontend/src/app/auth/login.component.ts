@@ -1,4 +1,4 @@
-import { Component, signal ,OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -10,46 +10,37 @@ import { AuthService } from '../core/services/auth.service';
   imports: [FormsModule, CommonModule, RouterLink],
   template: `
     <div class="login-shell">
-      <div class="login-card">
+      <div class="login-card athena-card athena-player-card">
 
         <!-- Logo -->
-        <div class="logo">
-          <span class="logo-icon">₳</span>
-          <h1 class="logo-text">AthenaXI</h1>
-          <p class="logo-sub">Fantasy IPL — Strategy of the Gods</p>
+        <div class="login-logo">
+          <div class="logo-helmet">⚔️</div>
+          <h1 class="athena-heading login-title">AthenaXI</h1>
+          <p class="login-tagline">Strategy. Auction. Glory.</p>
         </div>
 
-        <!-- Error -->
-        <div *ngIf="error()" class="error-banner">{{ error() }}</div>
+        @if (error()) {
+          <div class="athena-error animate-fade-in">{{ error() }}</div>
+        }
 
-        <!-- Form -->
-        <div class="form">
-          <div class="field">
-            <label>Username</label>
-            <input
-              type="text"
-              [(ngModel)]="username"
-              placeholder="your_team"
-              autocomplete="username"
+        <div class="athena-fields">
+          <div class="athena-field">
+            <label class="athena-field-label">Username</label>
+            <input class="athena-input" type="text" [(ngModel)]="username"
+              placeholder="your_team" autocomplete="username"
               [disabled]="loading()" />
           </div>
-
-          <div class="field">
-            <label>Password</label>
-            <input
-              type="password"
-              [(ngModel)]="password"
-              placeholder="••••••••"
-              autocomplete="current-password"
-              [disabled]="loading()"
-              (keyup.enter)="login()" />
+          <div class="athena-field">
+            <label class="athena-field-label">Password</label>
+            <input class="athena-input" type="password" [(ngModel)]="password"
+              placeholder="••••••••" autocomplete="current-password"
+              [disabled]="loading()" (keyup.enter)="login()" />
           </div>
-
-          <button
-            class="btn-login"
+          <button class="athena-btn athena-btn-primary login-btn"
             (click)="login()"
             [disabled]="loading() || !username || !password">
-            {{ loading() ? 'Signing in...' : 'Sign In' }}
+            @if (loading()) { <span>Entering the arena...</span> }
+            @else { <span>⚔️ Enter the Arena</span> }
           </button>
         </div>
 
@@ -62,87 +53,78 @@ import { AuthService } from '../core/services/auth.service';
   styles: [`
     .login-shell {
       min-height: 100vh;
-      background: #0f0f1a;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 16px;
+      padding: 20px;
     }
     .login-card {
-      background: #1a1a2e;
-      border: 1px solid #C9A84C33;
-      border-radius: 16px;
-      padding: 40px 32px;
       width: 100%;
-      max-width: 380px;
+      max-width: 400px;
+      padding: 40px 32px;
     }
-    .logo { text-align: center; margin-bottom: 32px; }
-    .logo-icon { font-size: 48px; }
-    .logo-text {
-      font-size: 28px; font-weight: 800;
-      color: #C9A84C; margin: 8px 0 4px;
-      letter-spacing: 1px;
+    .login-logo {
+      text-align: center;
+      margin-bottom: 36px;
     }
-    .logo-sub { color: #888; font-size: 13px; }
-    .error-banner {
-      background: #3a0a0a; border: 1px solid #C0392B;
-      color: #ff6b6b; border-radius: 8px;
-      padding: 10px 14px; font-size: 13px;
-      margin-bottom: 16px;
+    .logo-helmet {
+      font-size: 52px;
+      margin-bottom: 8px;
+      filter: drop-shadow(0 0 16px rgba(212,175,55,0.4));
     }
-    .form { display: flex; flex-direction: column; gap: 16px; }
-    .field { display: flex; flex-direction: column; gap: 6px; }
-    label { color: #aaa; font-size: 13px; font-weight: 600; }
-    input {
-      background: #0f0f1a; border: 1px solid #333;
-      border-radius: 8px; padding: 12px 14px;
-      color: #fff; font-size: 15px; outline: none;
-      transition: border-color 0.2s;
+    .login-title {
+      font-size: 32px;
+      letter-spacing: 0.2em;
+      display: block;
+      margin-bottom: 6px;
     }
-    input:focus { border-color: #C9A84C; }
-    input:disabled { opacity: 0.5; }
-    .btn-login {
-      background: #C9A84C; color: #0f0f1a;
-      border: none; border-radius: 8px;
-      padding: 14px; font-size: 15px;
-      font-weight: 700; cursor: pointer;
-      transition: opacity 0.2s; margin-top: 8px;
+    .login-tagline {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--gold-dark);
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
     }
-    .btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-login:not(:disabled):hover { opacity: 0.9; }
+    .login-btn {
+      width: 100%;
+      padding: 14px !important;
+      font-size: 15px !important;
+      margin-top: 4px;
+      letter-spacing: 0.06em;
+    }
     .guest-link {
-      text-align: center; margin-top: 20px;
-      color: #666; font-size: 13px;
+      text-align: center;
+      margin-top: 24px;
+      font-size: 13px;
+      color: #555;
+      font-family: var(--font-body);
     }
-    .guest-link a { color: #C9A84C; text-decoration: none; }
+    .guest-link a { color: var(--gold-dark); text-decoration: none; }
+    .guest-link a:hover { color: var(--gold); }
   `]
 })
-export class LoginComponent  implements OnInit{
+export class LoginComponent implements OnInit {
   username = '';
   password = '';
   loading  = signal(false);
   error    = signal('');
 
-  constructor(private auth: AuthService, private router: Router) {
-    // Redirect if already logged in
-    //if (this.auth.isLoggedIn()) this.router.navigate(['/']);
-  }
+  constructor(private auth: AuthService, private router: Router) {}
 
   ngOnInit() {
-  if (this.auth.isLoggedIn()) this.router.navigate(['/']);
-}
+    if (this.auth.isLoggedIn()) this.router.navigate(['/']);
+  }
+
   login() {
     if (!this.username || !this.password) return;
     this.loading.set(true);
     this.error.set('');
-
-    this.auth.login({ username: this.username, password: this.password })
-      .subscribe({
-        next: () => this.router.navigate(['/']),
-        error: () => {
-          this.error.set('Invalid username or password. Please try again.');
-          this.loading.set(false);
-        }
-      });
+    this.auth.login({ username: this.username, password: this.password }).subscribe({
+      next: () => this.router.navigate(['/']),
+      error: () => {
+        this.error.set('Invalid credentials. Check your username and password.');
+        this.loading.set(false);
+      }
+    });
   }
 }

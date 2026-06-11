@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { LeaderboardService } from '../core/services/leaderboard.service';
@@ -8,61 +8,102 @@ import { LeaderboardService } from '../core/services/leaderboard.service';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="page">
-      <div class="page-header">
-        <h1 class="page-title">ü•áüèÜü•àüéñÔ∏èü•â Leaderboard</h1>
-        <span class="season-tag">IPL 2025</span>
+    <div class="athena-page">
+
+      <!-- Header -->
+      <div class="lb-header">
+        <h1 class="athena-page-title">Ì≥ä Leaderboard</h1>
+        <span class="athena-badge athena-badge-gold">IPL 2025</span>
       </div>
+
       @if (loading()) {
-        <div class="loading">Loading standings...</div>
+        <div class="lb-loading">
+          <div class="loading-helm">‚öîÔ∏è</div>
+          <p>Summoning the standings...</p>
+        </div>
+      } @else if (rows().length === 0) {
+        <div class="lb-empty athena-card">
+          <span style="font-size:40px">ÌøüÔ∏è</span>
+          <p>No teams yet. Season hasn't started.</p>
+        </div>
       } @else {
-        <div class="table-wrap">
+        <div class="lb-list">
           @for (row of rows(); track row.teamId) {
-            <div class="team-row" [style.border-left-color]="row.themeColour">
-              <div class="rank">
-                {{ row.rank === 1 ? 'ü•á' : row.rank === 2 ? 'ü•à' : row.rank === 3 ? 'ü•â' : '#' + row.rank }}
+            <a [routerLink]="['/leaderboard', row.teamId]"
+               class="lb-row athena-card animate-fade-in"
+               [style.border-left-color]="row.themeColour"
+               style="border-left-width:4px; border-radius: 0 14px 14px 0; text-decoration:none; display:flex; align-items:center; gap:16px; padding:16px 20px; margin-bottom:10px;">
+
+              <!-- Rank -->
+              <div class="lb-rank" [ngClass]="'rank-' + row.rank">
+                @if (row.rank === 1) { Ìµá }
+                @else if (row.rank === 2) { Ìµà }
+                @else if (row.rank === 3) { Ìµâ }
+                @else { #{{ row.rank }} }
               </div>
-              <div class="team-info">
-                <span class="team-code" [style.color]="row.themeColour">{{ row.shortCode }}</span>
-                <span class="team-name">{{ row.teamName }}</span>
-                <span class="owner">{{ row.ownerDisplayName }}</span>
+
+              <!-- Team info -->
+              <div class="lb-team-info">
+                <span class="lb-team-code" [style.color]="row.themeColour">
+                  {{ row.shortCode }}
+                </span>
+                <span class="lb-team-name">{{ row.teamName }}</span>
+                <span class="lb-owner">{{ row.ownerDisplayName }}</span>
               </div>
-              <div class="points-col">
-                <span class="total-pts">{{ row.totalPoints }}</span>
-                <span class="pts-label">pts</span>
+
+              <!-- Points -->
+              <div class="lb-points-col">
+                <span class="athena-amount lb-points">{{ row.totalPoints }}</span>
+                <span class="athena-label">pts</span>
+                @if (row.pointsLastMatch > 0) {
+                  <span class="lb-last">+{{ row.pointsLastMatch }} last match</span>
+                }
               </div>
-            </div>
-          }
-          @if (rows().length === 0) {
-            <div class="empty">No teams yet. Season hasn't started.</div>
+            </a>
           }
         </div>
       }
     </div>
   `,
   styles: [`
-    .page { padding: 16px; max-width: 600px; margin: 0 auto; }
-    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-    .page-title { font-size: 22px; font-weight: 800; color: #C9A84C; margin: 0; }
-    .season-tag { background: #C9A84C22; color: #C9A84C; border-radius: 20px; padding: 4px 12px; font-size: 12px; }
-    .loading, .empty { text-align: center; color: #666; padding: 40px; }
-    .table-wrap { display: flex; flex-direction: column; gap: 10px; }
-    .team-row { background: #1a1a2e; border-left: 4px solid; border-radius: 0 10px 10px 0; padding: 14px 16px; display: flex; align-items: center; gap: 16px; }
-    .rank { font-size: 18px; font-weight: 800; min-width: 40px; }
-    .team-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-    .team-code { font-size: 13px; font-weight: 800; }
-    .team-name { font-size: 15px; font-weight: 700; color: #fff; }
-    .owner { font-size: 12px; color: #888; }
-    .points-col { display: flex; flex-direction: column; align-items: flex-end; }
-    .total-pts { font-size: 24px; font-weight: 900; color: #C9A84C; }
-    .pts-label { font-size: 11px; color: #888; }
+    .lb-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .lb-loading, .lb-empty {
+      text-align: center; padding: 60px 20px;
+      color: #555; font-family: var(--font-body);
+    }
+    .loading-helm { font-size: 40px; margin-bottom: 12px; animation: spin 2s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .lb-rank {
+      font-family: var(--font-timer);
+      font-size: 22px; font-weight: 900;
+      min-width: 44px; text-align: center;
+    }
+    .lb-team-info {
+      flex: 1; display: flex;
+      flex-direction: column; gap: 3px;
+    }
+    .lb-team-code { font-size: 12px; font-weight: 800; letter-spacing: 0.06em; }
+    .lb-team-name { font-size: 16px; font-weight: 700; color: #fff; }
+    .lb-owner { font-size: 12px; color: #666; }
+    .lb-points-col {
+      display: flex; flex-direction: column;
+      align-items: flex-end; gap: 2px;
+    }
+    .lb-points { font-size: 26px !important; }
+    .lb-last { font-size: 11px; color: var(--green-cricket); font-weight: 600; }
   `]
 })
 export class LeaderboardComponent implements OnInit {
   rows    = signal<any[]>([]);
   loading = signal(true);
   private seasonId = '00000000-0000-0000-0000-000000000001';
-  constructor( @Inject(LeaderboardService) private svc: LeaderboardService) {}
+
+  constructor(private svc: LeaderboardService) {}
+
   ngOnInit() {
     this.svc.getLeaderboard(this.seasonId).subscribe({
       next: d => { this.rows.set(d); this.loading.set(false); },
