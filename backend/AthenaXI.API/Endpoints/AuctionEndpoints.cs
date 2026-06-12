@@ -58,7 +58,7 @@ public static class AuctionEndpoints
                                           a.Status != AuctionStatus.Completed);
 
             if (session is null)
-                return Results.NotFound(new { error = "No active auction session." });
+                return Results.Ok(new { id = (Guid?)null, status = "NoSession", message = "No auction session found for this season. Upload player pool and auction order first." });
 
             var active = session.PlayerSlots
                 .FirstOrDefault(s => s.Status == AuctionSlotStatus.Active);
@@ -149,7 +149,7 @@ public static class AuctionEndpoints
                 .FirstOrDefaultAsync(a => a.Id == req.AuctionSessionId);
 
             if (session is null || session.Status != AuctionStatus.InProgress)
-                return Results.BadRequest(new { error = "No active auction session." });
+                return Results.Ok(new { id = (Guid?)null, status = "NoSession", message = "No active auction session." });
 
             var slot = await db.AuctionPlayerSlots
                 .FirstOrDefaultAsync(s => s.Id == req.AuctionPlayerSlotId &&
@@ -373,8 +373,8 @@ public static class AuctionEndpoints
             var session = await db.AuctionSessions
                 .FirstOrDefaultAsync(a => a.Id == slot.AuctionSessionId &&
                                           a.Status == AuctionStatus.InProgress);
-            if (session is null) return Results.BadRequest(new { error = "No active auction session." });
-
+                if (session is null)
+                    return Results.Ok(new { id = (Guid?)null, status = "NoSession", message = "No auction session found for this season. Upload player pool and auction order first." });
             // Check no other player is currently active
             var activeSlot = await db.AuctionPlayerSlots
                 .AnyAsync(s => s.AuctionSessionId == session.Id &&
@@ -411,7 +411,8 @@ public static class AuctionEndpoints
             var session = await db.AuctionSessions
                 .FirstOrDefaultAsync(a => a.Id == req.AuctionSessionId &&
                                           a.Status == AuctionStatus.InProgress);
-            if (session is null) return Results.BadRequest(new { error = "No active auction to correct." });
+            if (session is null)
+                return Results.Ok(new { id = (Guid?)null, status = "NoSession", message = "No auction session found for this season. Upload player pool and auction order first." });
 
             // Find existing result
             var result = await db.AuctionResults
@@ -701,7 +702,8 @@ public static class AuctionEndpoints
 
             var session = await db.AuctionSessions
                 .FirstOrDefaultAsync(a => a.SeasonId == seasonId);
-            if (session is null) return Results.NotFound(new { error = "No auction session found." });
+            if (session is null)
+                return Results.Ok(new { id = (Guid?)null, status = "NoSession", message = "No auction session found for this season. Upload player pool and auction order first." });
 
             var invite = await db.AuctionInvites
                 .FirstOrDefaultAsync(i => i.AuctionSessionId == session.Id && i.FantasyTeamId == team.Id);

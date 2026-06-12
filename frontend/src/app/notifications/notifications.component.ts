@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NotificationService } from '../core/services/notification.service';
 
@@ -7,43 +7,52 @@ import { NotificationService } from '../core/services/notification.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="page">
-      <div class="page-header">
-        <h1 class="page-title">ðŸ“¢ Notifications</h1>
+    <div class="athena-page">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <h1 class="athena-page-title" style="margin-bottom:0">í´” Alerts</h1>
         @if (notifs().length > 0) {
-          <button class="btn-mark" (click)="markAllRead()">Mark all read</button>
+          <button class="athena-btn athena-btn-secondary" style="padding:6px 14px;font-size:12px" (click)="markAllRead()">
+            Mark all read
+          </button>
         }
       </div>
-      @for (n of notifs(); track n.id) {
-        <div class="notif-row" [class.unread]="!n.isRead" (click)="markRead(n)">
-          <div>
-            <p class="notif-title">{{ n.title }}</p>
-            <p class="notif-body">{{ n.body }}</p>
-          </div>
-          <span class="time">{{ n.createdAt | date:'shortTime' }}</span>
+
+      @if (notifs().length === 0) {
+        <div class="athena-card" style="text-align:center;padding:48px;color:#555">
+          <span style="font-size:36px;display:block;margin-bottom:12px">í´”</span>
+          No notifications yet.
         </div>
       }
-      @if (notifs().length === 0) {
-        <div class="empty">No notifications yet.</div>
+
+      @for (n of notifs(); track n.id) {
+        <div class="notif-row athena-card-sm" [class.unread]="!n.isRead" (click)="markRead(n)" style="margin-bottom:10px;cursor:pointer">
+          <div style="flex:1">
+            <p style="font-family:var(--font-body);font-size:14px;font-weight:700;color:#fff;margin:0 0 4px">{{ n.title }}</p>
+            <p style="font-size:13px;color:#aaa;margin:0">{{ n.body }}</p>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+            <span style="font-size:11px;color:#555">{{ n.createdAt | date:'shortTime' }}</span>
+            @if (!n.isRead) {
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--gold);display:block"></span>
+            }
+          </div>
+        </div>
       }
     </div>
   `,
   styles: [`
-    .page { padding: 16px; max-width: 600px; margin: 0 auto; }
-    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-    .page-title { font-size: 22px; font-weight: 800; color: #C9A84C; margin: 0; }
-    .btn-mark { background: transparent; border: 1px solid #444; color: #888; border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
-    .notif-row { background: #1a1a2e; border-radius: 10px; padding: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; border-left: 3px solid transparent; cursor: pointer; }
-    .notif-row.unread { border-left-color: #C9A84C; }
-    .notif-title { font-size: 14px; font-weight: 700; color: #fff; margin: 0 0 4px; }
-    .notif-body { font-size: 13px; color: #aaa; margin: 0; }
-    .time { font-size: 11px; color: #555; white-space: nowrap; }
-    .empty { text-align: center; color: #555; padding: 40px; }
+    .notif-row {
+      display: flex; align-items: flex-start; gap: 14px;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+    }
+    .notif-row.unread { border-left-color: var(--gold); }
+    .notif-row:hover { background: rgba(30,58,95,0.6) !important; }
   `]
 })
 export class NotificationsComponent implements OnInit {
   notifs = signal<any[]>([]);
-  constructor(@Inject(NotificationService) private svc: NotificationService) {}
+  constructor(private svc: NotificationService) {}
   ngOnInit() { this.svc.getMyNotifications().subscribe(d => this.notifs.set(d)); }
   markRead(n: any) {
     if (n.isRead) return;

@@ -9,7 +9,22 @@ export const routes: Routes = [
   { path: 'auction', loadComponent: () => import('./auction/room/auction-room.component').then(m => m.AuctionRoomComponent), canActivate: [authGuard] },
   { path: 'transfers', loadComponent: () => import('./transfers/transfers.component').then(m => m.TransfersComponent), canActivate: [authGuard] },
   { path: 'notifications', loadComponent: () => import('./notifications/notifications.component').then(m => m.NotificationsComponent), canActivate: [authGuard] },
-  { path: 'admin', loadComponent: () => import('./admin/admin.component').then(m => m.AdminComponent), canActivate: [adminGuard] },
-  { path: 'season-setup', loadComponent: () => import('./season-setup/season-setup.component').then(m => m.SeasonSetupComponent), canActivate: [adminGuard] },
+
+  // ── Admin — full-screen layout with child routes ──────────────────────────
+  {
+    path: 'admin',
+    loadComponent: () => import('./admin/admin.component').then(m => m.AdminComponent),
+    canActivate: [adminGuard],
+    children: [
+      { path: '', redirectTo: 'seasons', pathMatch: 'full' },
+      { path: 'seasons', loadComponent: () => import('./admin/seasons/seasons.component').then(m => m.SeasonsAdminComponent) },
+      { path: 'players', loadComponent: () => import('./admin/players/players.component').then(m => m.PlayersAdminComponent) },
+      { path: 'auction', loadComponent: () => import('./admin/auction-lobby/auction-lobby.component').then(m => m.AuctionLobbyComponent) },
+      { path: 'notifications', loadComponent: () => import('./admin/notifications-admin/notifications-admin.component').then(m => m.NotificationsAdminComponent) },
+    ]
+  },
+
+  // Keep old /season-setup as redirect
+  { path: 'season-setup', redirectTo: 'admin/seasons', pathMatch: 'full' },
   { path: '**', redirectTo: 'leaderboard' }
 ];

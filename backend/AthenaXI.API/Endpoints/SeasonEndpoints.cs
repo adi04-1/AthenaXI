@@ -207,7 +207,7 @@ public static class SeasonEndpoints
             AthenaXIDbContext db,
             ClaimsPrincipal caller) =>
         {
-            if (!IsAppOwner(caller)) return Results.Forbid();
+            if (!IsAdminOrOwner(caller)) return Results.Forbid();
 
             var season = await db.Seasons
                 .Include(s => s.Teams)
@@ -241,8 +241,9 @@ private static bool IsAppOwner(ClaimsPrincipal caller)
 }
     private static SeasonResponse ToSeasonResponse(Season s) => new(
         s.Id, s.Name, s.Year, s.Mode.ToString(), s.Status.ToString(),
-        0, true,
-        s.AuctionDate, s.SeasonStartDate, s.SeasonEndDate, s.CreatedAt);
+        0, true, s.AuctionDate?.ToUniversalTime(),
+        s.SeasonStartDate?.ToUniversalTime(),
+        s.SeasonEndDate?.ToUniversalTime(), s.CreatedAt);
 
     private static SeasonConfigResponse ToConfigResponse(SeasonConfig c) => new(
         c.BudgetPerTeamCr, c.MinSquadSize, c.MaxSquadSize, c.ReservePlayers,
