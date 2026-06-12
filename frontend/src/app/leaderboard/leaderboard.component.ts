@@ -12,8 +12,8 @@ import { LeaderboardService } from '../core/services/leaderboard.service';
 
       <!-- Header -->
       <div class="lb-header">
-        <h1 class="athena-page-title">í³Š Leaderboard</h1>
-        <span class="athena-badge athena-badge-gold">IPL 2025</span>
+        <h1 class="athena-page-title">ğŸ† Leaderboard</h1>
+        <span class="athena-badge athena-badge-gold">GLORY</span>
       </div>
 
       @if (loading()) {
@@ -23,7 +23,7 @@ import { LeaderboardService } from '../core/services/leaderboard.service';
         </div>
       } @else if (rows().length === 0) {
         <div class="lb-empty athena-card">
-          <span style="font-size:40px">í¿Ÿï¸</span>
+          <span style="font-size:40px">ğŸ˜¢</span>
           <p>No teams yet. Season hasn't started.</p>
         </div>
       } @else {
@@ -36,9 +36,9 @@ import { LeaderboardService } from '../core/services/leaderboard.service';
 
               <!-- Rank -->
               <div class="lb-rank" [ngClass]="'rank-' + row.rank">
-                @if (row.rank === 1) { íµ‡ }
-                @else if (row.rank === 2) { íµˆ }
-                @else if (row.rank === 3) { íµ‰ }
+                @if (row.rank === 1) { ğŸ¥‡ğŸ‘‘ }
+                @else if (row.rank === 2) { ğŸ¥ˆ }
+                @else if (row.rank === 3) { ğŸ¥‰ }
                 @else { #{{ row.rank }} }
               </div>
 

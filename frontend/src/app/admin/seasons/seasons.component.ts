@@ -13,7 +13,7 @@ import { TeamService } from '../../core/services/team.service';
     <div class="admin-page">
       <div class="admin-page-header">
         <div>
-          <h1 class="athena-page-title" style="margin-bottom:4px">ðŸ—“ï¸ Seasons</h1>
+          <h1 class="athena-page-title" style="margin-bottom:4px">🗓️ Seasons</h1>
           <p class="athena-label">Create, configure and manage all seasons</p>
         </div>
         <button class="athena-btn athena-btn-primary" (click)="showCreate.set(!showCreate())">
@@ -35,9 +35,9 @@ import { TeamService } from '../../core/services/team.service';
             <div class="athena-field"><label class="athena-field-label">Mode</label>
               <select class="athena-input" [(ngModel)]="form.mode">
                 <option value="">Select mode...</option>
-                <option value="FreshAuction">ðŸŸ¢ Fresh Auction</option>
-                <option value="AuctionWithRetentions">ðŸŸ¡ Auction with Retentions</option>
-                <option value="DirectAllocation">ðŸ”µ Direct Allocation</option>
+                <option value="FreshAuction">🆕 Fresh Auction</option>
+                <option value="AuctionWithRetentions">🟡 Auction with Retentions</option>
+                <option value="DirectAllocation">🔵 Direct Allocation</option>
               </select></div>
             <div class="athena-field"><label class="athena-field-label">Auction Date</label>
               <input class="athena-input" type="date" [(ngModel)]="form.auctionDate" /></div>
@@ -59,7 +59,7 @@ import { TeamService } from '../../core/services/team.service';
         <div class="loading-state">Loading seasons...</div>
       } @else if (seasons().length === 0 && !showCreate()) {
         <div class="empty-state athena-card">
-          <span style="font-size:40px">ðŸŸï¸</span>
+          <span style="font-size:40px">📅</span>
           <p>No seasons yet. Create your first above.</p>
         </div>
       } @else {
@@ -74,14 +74,14 @@ import { TeamService } from '../../core/services/team.service';
                     <span class="athena-badge athena-badge-surface">{{ modeLabel(s.mode) }}</span>
                   </div>
                   <div class="season-meta">
-                    @if (s.auctionDate) { <span>ðŸ“… Auction: {{ s.auctionDate | date:'mediumDate' }}</span> }
-                    @if (s.seasonStartDate) { <span>ðŸ Starts: {{ s.seasonStartDate | date:'mediumDate' }}</span> }
+                    @if (s.auctionDate) { <span>👨‍⚖🏷️ Auction: {{ s.auctionDate | date:'mediumDate' }}</span> }
+                    @if (s.seasonStartDate) { <span>📅 Starts: {{ s.seasonStartDate | date:'mediumDate' }}</span> }
                   </div>
                 </div>
                 <div class="season-actions" (click)="$event.stopPropagation()">
-                  <button class="icon-btn" (click)="startEdit(s)" title="Edit">âœï¸</button>
-                  <button class="icon-btn" (click)="deleteSeason(s.id)" title="Delete">ðŸ—‘ï¸</button>
-                  <span class="expand-icon">{{ expandedId() === s.id ? 'â–²' : 'â–¼' }}</span>
+                  <button class="icon-btn" (click)="startEdit(s)" title="Edit">✏️</button>
+                  <button class="icon-btn" (click)="deleteSeason(s.id)" title="Delete">🗑️</button>
+                  <span class="expand-icon">{{ expandedId() === s.id ? '▲' : '▼' }}</span>
                 </div>
               </div>
 
@@ -112,8 +112,8 @@ import { TeamService } from '../../core/services/team.service';
               @if (expandedId() === s.id && editingId() !== s.id) {
                 <div class="season-detail animate-fade-in">
                   <div class="detail-tabs">
-                    <button class="detail-tab" [class.active]="activeTab() === 'teams'" (click)="activeTab.set('teams'); loadTeams(s.id)">ðŸ‘¥ Teams ({{ seasonTeams().length }})</button>
-                    <button class="detail-tab" [class.active]="activeTab() === 'config'" (click)="loadConfig(s.id)">âš™ï¸ Config</button>
+                    <button class="detail-tab" [class.active]="activeTab() === 'teams'" (click)="activeTab.set('teams'); loadTeams(s.id)">👥Teams ({{ seasonTeams().length }})</button>
+                    <button class="detail-tab" [class.active]="activeTab() === 'config'" (click)="loadConfig(s.id)">⚙️ Config</button>
                   </div>
 
                   @if (activeTab() === 'teams') {
@@ -159,7 +159,7 @@ import { TeamService } from '../../core/services/team.service';
                                 <div style="font-size:14px;font-weight:700;color:#fff">{{ t.teamName }}</div>
                                 <div style="font-size:11px;color:#666">{{ '@' + t.username }}</div>
                               </div>
-                              <span style="font-family:var(--font-timer);font-size:14px;color:var(--gold);font-weight:700">â‚¹{{ t.budgetRemainingCr }}Cr</span>
+                              <span style="font-family:var(--font-timer);font-size:14px;color:var(--gold);font-weight:700">💰{{ t.budgetRemainingCr }}Cr</span>
                             </div>
                           }
                         </div>
@@ -337,5 +337,5 @@ export class SeasonsAdminComponent implements OnInit {
     const m: any = { Upcoming:'athena-badge-surface', ReadyForAuction:'athena-badge-blue', AuctionPhase:'athena-badge-red', TeamSelectionPhase:'athena-badge-gold', InProgress:'athena-badge-green', Completed:'athena-badge-surface' };
     return m[s] ?? 'athena-badge-surface';
   }
-  modeLabel(m: string) { return { FreshAuction:'ðŸŸ¢ Fresh', AuctionWithRetentions:'ðŸŸ¡ Retention', DirectAllocation:'ðŸ”µ Direct' }[m] ?? m; }
+  modeLabel(m: string) { return { FreshAuction:'🟢 Fresh', AuctionWithRetentions:'🟡 Retention', DirectAllocation:'🔵 Direct' }[m] ?? m; }
 }

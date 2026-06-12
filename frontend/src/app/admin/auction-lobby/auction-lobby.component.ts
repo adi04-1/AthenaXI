@@ -15,10 +15,10 @@ import { NotificationService } from '../../core/services/notification.service';
     <div class="admin-page">
       <div class="admin-page-header">
         <div>
-          <h1 class="athena-page-title" style="margin-bottom:4px">Ì¥® Auction Lobby</h1>
+          <h1 class="athena-page-title" style="margin-bottom:4px">üë®‚Äç‚öñüí∏üôã‚Äç‚ôÇÔ∏è Auction Lobby</h1>
           <p class="athena-label">Manage auction day ‚Äî invites, acceptance tracking, kickstart</p>
         </div>
-        <button class="athena-btn athena-btn-secondary" (click)="refresh()">Ì¥Ñ Refresh</button>
+        <button class="athena-btn athena-btn-secondary" (click)="refresh()">üîÑ Refresh</button>
       </div>
 
       @if (error()) { <div class="athena-error animate-fade-in">{{ error() }}</div> }
@@ -37,7 +37,7 @@ import { NotificationService } from '../../core/services/notification.service';
                   <span class="today-name">{{ s.name }}</span>
                   <span class="athena-badge" [ngClass]="statusBadge(s.status)">{{ s.status }}</span>
                 </div>
-                <div class="athena-label">Ì≥Ö Today ¬∑ {{ s.mode }}</div>
+                <div class="athena-label">üü¢ Today ¬∑ {{ s.mode }}</div>
               </div>
             }
           </div>
@@ -109,13 +109,13 @@ import { NotificationService } from '../../core/services/notification.service';
             <!-- Invite actions -->
             <div class="lobby-actions">
               <button class="athena-btn athena-btn-secondary" (click)="sendInvites()" [disabled]="saving()">
-                {{ saving() ? 'Sending...' : 'Ì≥© Send / Resend Invites' }}
+                {{ saving() ? 'Sending...' : 'üîÑ Send / Resend Invites' }}
               </button>
               <button class="athena-btn athena-btn-primary kickstart-btn"
                 [disabled]="lobby().acceptedCount < 1 || saving() || lobby().auctionStatus === 'InProgress'"
                 (click)="startAuction()">
                 @if (lobby().auctionStatus === 'InProgress') {
-                  Ì¥¥ Auction Live
+                  üü¢ Auction Live
                 } @else {
                   ‚ñ∂Ô∏è Kickstart Auction ({{ lobby().acceptedCount }} ready)
                 }
@@ -127,7 +127,7 @@ import { NotificationService } from '../../core/services/notification.service';
           @if (lobby().auctionStatus === 'InProgress') {
             <div class="athena-card live-banner animate-fade-in">
               <div style="display:flex;align-items:center;gap:12px">
-                <span style="font-size:32px">Ì¥¥</span>
+                <span style="font-size:32px">üü¢</span>
                 <div>
                   <div class="athena-heading" style="font-size:18px">Auction is LIVE</div>
                   <p class="athena-label">{{ lobby().acceptedCount }} teams are in the room</p>
@@ -149,7 +149,7 @@ import { NotificationService } from '../../core/services/notification.service';
                 placeholder="Auction starts in 30 minutes! Please accept the invite." />
             </div>
             <button class="athena-btn athena-btn-secondary" (click)="sendReminder()" [disabled]="!reminderMsg || saving()">
-              Ì≥£ Send to Pending Teams
+              üïí Send to Pending Teams
             </button>
           </div>
 
@@ -161,7 +161,7 @@ import { NotificationService } from '../../core/services/notification.service';
       } @else if (selectedSeasonId() && !lobby() && !loadingLobby()) {
         <!-- No auction session yet -->
         <div class="athena-card section-card no-session-card animate-fade-in">
-          <span style="font-size:40px">Ì≥ã</span>
+          <span style="font-size:40px">‚ùå</span>
           <h3 style="color:#fff;font-family:var(--font-body);font-weight:700;margin:12px 0 6px">No Auction Session Yet</h3>
           <p class="athena-label">Upload the player pool and auction order first from the Player Upload section.</p>
           <a routerLink="/admin/players" class="athena-btn athena-btn-secondary" style="margin-top:16px;text-decoration:none;display:inline-block">
@@ -297,7 +297,7 @@ export class AuctionLobbyComponent implements OnInit, OnDestroy {
     this.saving.set(true); this.error.set('');
     this.auctionSvc.sendInvites(sid).subscribe({
       next: (r: any) => {
-        this.success.set(`Ì≥© Invites sent to ${r.count} teams!`);
+        this.success.set(`ÔøΩÔøΩÔøΩ Invites sent to ${r.count} teams!`);
         this.saving.set(false);
         this.loadLobby(sid);
         setTimeout(() => this.success.set(''), 4000);
@@ -326,7 +326,7 @@ export class AuctionLobbyComponent implements OnInit, OnDestroy {
     if (!sid) return;
     this.saving.set(true);
     this.auctionSvc.startAuction(sid).subscribe({
-      next: () => { this.success.set('Ì¥® Auction started!'); this.saving.set(false); this.loadLobby(sid); },
+      next: () => { this.success.set('ÔøΩÔøΩÔøΩ Auction started!'); this.saving.set(false); this.loadLobby(sid); },
       error: (e: any) => { this.error.set(e?.error?.error ?? 'Failed to start.'); this.saving.set(false); }
     });
   }

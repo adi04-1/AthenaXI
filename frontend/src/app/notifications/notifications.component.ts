@@ -9,17 +9,17 @@ import { NotificationService } from '../core/services/notification.service';
   template: `
     <div class="athena-page">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-        <h1 class="athena-page-title" style="margin-bottom:0">í´” Alerts</h1>
+        <h1 class="athena-page-title" style="margin-bottom:0">ðŸš¨ Alerts</h1>
         @if (notifs().length > 0) {
           <button class="athena-btn athena-btn-secondary" style="padding:6px 14px;font-size:12px" (click)="markAllRead()">
-            Mark all read
+            âœ… Mark all read
           </button>
         }
       </div>
 
       @if (notifs().length === 0) {
         <div class="athena-card" style="text-align:center;padding:48px;color:#555">
-          <span style="font-size:36px;display:block;margin-bottom:12px">í´”</span>
+          <span style="font-size:36px;display:block;margin-bottom:12px">ðŸ””</span>
           No notifications yet.
         </div>
       }

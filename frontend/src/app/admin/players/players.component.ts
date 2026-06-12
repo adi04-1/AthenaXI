@@ -13,7 +13,7 @@ import { read, utils } from 'xlsx';
     <div class="admin-page">
       <div class="admin-page-header">
         <div>
-          <h1 class="athena-page-title" style="margin-bottom:4px">í±¥ Player Upload</h1>
+          <h1 class="athena-page-title" style="margin-bottom:4px">ğŸğŸ“¤ Player Upload</h1>
           <p class="athena-label">Select season â†’ download template â†’ upload data</p>
         </div>
       </div>
@@ -112,11 +112,11 @@ import { read, utils } from 'xlsx';
             <div class="upload-area" (click)="fileInput.click()" [class.has-file]="selectedFile()">
               <input #fileInput type="file" accept=".xlsx,.xls" style="display:none" (change)="onFile($event)" />
               @if (selectedFile()) {
-                <span style="font-size:32px">í³Š</span>
+                <span style="font-size:32px">âœ…</span>
                 <span class="upload-filename">{{ selectedFile()!.name }}</span>
                 <span class="athena-label">Click to change file</span>
               } @else {
-                <span style="font-size:32px">í³‚</span>
+                <span style="font-size:32px">ğŸ“</span>
                 <span class="upload-filename">Click to select Excel file</span>
                 <span class="athena-label">.xlsx or .xls accepted</span>
               }
@@ -212,7 +212,7 @@ export class PlayersAdminComponent implements OnInit {
   onFile(e: any) { const f = e.target.files?.[0]; if (f) { this.selectedFile.set(f); this.error.set(''); } }
 
   templateName() { const m = this.selectedSeason()?.mode; return m === 'FreshAuction' ? 'Fresh Auction Template' : m === 'AuctionWithRetentions' ? 'Retention Auction Template' : 'Direct Allocation Template'; }
-  templateIcon() { return { FreshAuction:'í¿¢', AuctionWithRetentions:'í¿¡', DirectAllocation:'í´µ' }[this.selectedSeason()?.mode as string] ?? 'í³‹'; }
+  templateIcon() { return { FreshAuction:'ğŸ', AuctionWithRetentions:'ğŸ”„', DirectAllocation:'ğŸ“‹' }[this.selectedSeason()?.mode as string] ?? 'ğŸ“'; }
   templateStyle() { return { FreshAuction:'fresh', AuctionWithRetentions:'retention', DirectAllocation:'direct' }[this.selectedSeason()?.mode as string] ?? ''; }
   templateSheets() { return { FreshAuction:'2 sheets: Player Pool + Auction Order', AuctionWithRetentions:'3 sheets: Player Pool + Auction Order + Retentions', DirectAllocation:'1 sheet: Final Roster' }[this.selectedSeason()?.mode as string] ?? ''; }
   templateUrl() { return `/assets/templates/template_${this.selectedSeason()?.mode?.toLowerCase()}.xlsx`; }
@@ -221,7 +221,7 @@ export class PlayersAdminComponent implements OnInit {
     if (this.selectedSeason()?.mode === 'AuctionWithRetentions') base.push('Retentions sheet: team_code, player_name, retention_cost_cr, slot');
     return base;
   }
-  modeLabel(m: string) { return { FreshAuction:'í¿¢ Fresh', AuctionWithRetentions:'í¿¡ Retention', DirectAllocation:'í´µ Direct' }[m] ?? m; }
+  modeLabel(m: string) { return { FreshAuction:'ğŸŸ¢ Fresh', AuctionWithRetentions:'ğŸŸ¡ Retention', DirectAllocation:'ğŸ”µ Direct' }[m] ?? m; }
 
   processUpload() {
     const file = this.selectedFile(); const season = this.selectedSeason();

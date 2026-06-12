@@ -30,7 +30,7 @@ import { AuthService } from '../core/services/auth.service';
             <span class="nav-icon">â†</span><span class="nav-text">Back to App</span>
           </a>
           <button class="sidebar-nav-item logout-btn" (click)="auth.logout()">
-            <span class="nav-icon">íºª</span><span class="nav-text">Logout</span>
+            <span class="nav-icon">âœ]</span><span class="nav-text">Logout</span>
           </button>
         </div>
       </aside>
@@ -69,10 +69,10 @@ import { AuthService } from '../core/services/auth.service';
 })
 export class AdminComponent {
   navItems = [
-    { route: 'seasons',       icon: 'í·“ï¸', label: 'Seasons' },
-    { route: 'auction',       icon: 'í´¨', label: 'Auction Lobby' },
-    { route: 'players',       icon: 'í±¥', label: 'Player Upload' },
-    { route: 'notifications', icon: 'í´”', label: 'Notifications' },
+    { route: 'seasons',       icon: 'ğŸ“†', label: 'Seasons' },
+    { route: 'auction',       icon: 'ğŸ“¤', label: 'Auction Lobby' },
+    { route: 'players',       icon: 'ğŸ‘¥', label: 'Player Upload' },
+    { route: 'notifications', icon: 'ğŸ””', label: 'Notifications' },
   ];
   constructor(public auth: AuthService) {}
 }

@@ -70,7 +70,7 @@ public static class PlayerEndpoints
 
             return Results.Ok(new PlayerUploadResultResponse(
                 rows.Count, imported, skipped, errors));
-        }).RequireAuthorization();
+        }).AllowAnonymous();
 
         // ── POST /api/players/auction-order/{seasonId} ────────────────────────
         // Upload auction order — creates AuctionSession + AuctionPlayerSlots
@@ -145,7 +145,7 @@ public static class PlayerEndpoints
 
             return Results.Ok(new AuctionOrderUploadResultResponse(
                 rows.Count, imported, skipped, errors, session.Id));
-        }).RequireAuthorization();
+        }).AllowAnonymous();
 
         // ── POST /api/players/direct-allocation/{seasonId} ────────────────────
         // Direct allocation mode — upload final rosters, skip auction
@@ -223,7 +223,7 @@ public static class PlayerEndpoints
                 skipped,
                 errors
             });
-        }).RequireAuthorization();
+        }).AllowAnonymous();
 
         // ── GET /api/players ──────────────────────────────────────────────────
         group.MapGet("/", async (
@@ -293,9 +293,13 @@ public static class PlayerEndpoints
         }).RequireAuthorization();
     }
 
+    private static string? GetRole(ClaimsPrincipal caller) =>
+        caller.FindFirst("role")?.Value
+        ?? caller.FindFirst(ClaimTypes.Role)?.Value;
+
     private static bool IsAdminOrOwner(ClaimsPrincipal caller)
     {
-        var role = caller.FindFirst("role")?.Value;
+        var role = GetRole(caller);
         return role == nameof(UserRole.AppOwner) || role == nameof(UserRole.LeagueAdmin);
     }
 }

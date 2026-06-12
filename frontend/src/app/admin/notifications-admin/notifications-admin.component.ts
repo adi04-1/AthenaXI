@@ -13,7 +13,7 @@ import { NotificationService } from '../../core/services/notification.service';
     <div class="admin-page">
       <div class="admin-page-header">
         <div>
-          <h1 class="athena-page-title" style="margin-bottom:4px">ðŸ”” Notifications</h1>
+          <h1 class="athena-page-title" style="margin-bottom:4px">🔔 Notifications</h1>
           <p class="athena-label">Send announcements and alerts to teams</p>
         </div>
       </div>
@@ -47,13 +47,13 @@ import { NotificationService } from '../../core/services/notification.service';
             <label class="athena-field-label">Send To</label>
             <div class="target-options">
               <button class="target-btn" [class.active]="target() === 'all'" (click)="target.set('all')">
-                ðŸŒ All Teams
+                📢 All Teams
               </button>
               <button class="target-btn" [class.active]="target() === 'season'" (click)="target.set('season')">
-                ðŸ—“ï¸ Season Teams
+                🗓️ Season Teams
               </button>
               <button class="target-btn" [class.active]="target() === 'specific'" (click)="target.set('specific')">
-                ðŸ‘¥ Specific Team
+                👥 Specific Team
               </button>
             </div>
           </div>
@@ -97,11 +97,11 @@ import { NotificationService } from '../../core/services/notification.service';
           <div class="athena-field">
             <label class="athena-field-label">Notification Type</label>
             <select class="athena-input" [(ngModel)]="notifType">
-              <option value="GeneralAlert">ðŸ“¢ General Alert</option>
-              <option value="AuctionStartingSoon">ðŸ”¨ Auction Starting Soon</option>
-              <option value="MatchPointsUpdated">ðŸ“Š Match Points Updated</option>
-              <option value="TransferWindowOpen">ðŸ”„ Transfer Window Open</option>
-              <option value="TransferWindowClosing">âš ï¸ Transfer Window Closing</option>
+              <option value="GeneralAlert">🔔 General Alert</option>
+              <option value="AuctionStartingSoon">⏰ Auction Starting Soon</option>
+              <option value="MatchPointsUpdated">📊 Match Points Updated</option>
+              <option value="TransferWindowOpen">🔓 Transfer Window Open</option>
+              <option value="TransferWindowClosing">⚠️ Transfer Window Closing</option>
             </select>
           </div>
 
@@ -131,7 +131,7 @@ import { NotificationService } from '../../core/services/notification.service';
           <button class="athena-btn athena-btn-primary" style="width:100%"
             [disabled]="!notifTitle || !notifBody || saving()"
             (click)="send()">
-            {{ saving() ? 'Sending...' : 'ðŸ“£ Send Notification' }}
+            {{ saving() ? 'Sending...' : ' 🔔 Send Notification' }}
           </button>
         </div>
       </div>
@@ -180,12 +180,12 @@ export class NotificationsAdminComponent implements OnInit {
   notifType        = 'GeneralAlert';
 
   templates = [
-    { icon: 'ðŸ”¨', label: 'Auction Invite',    title: 'ðŸ”¨ Auction Invite', body: 'Your team has been invited to join the auction! Open AthenaXI and accept the invite to participate.' },
-    { icon: 'â°', label: 'Auction Reminder',  title: 'â° Reminder', body: 'Auction starts soon! Please accept your invite and join the auction room.' },
-    { icon: 'ðŸ‘¥', label: 'Players Uploaded',  title: 'ðŸ‘¥ Player Pool Ready', body: 'The player pool and auction order have been uploaded. Browse players before auction day!' },
-    { icon: 'ðŸ“‹', label: 'Auction Order Set', title: 'ðŸ“‹ Auction Order Published', body: 'The auction order for upcoming season is ready. Check the player list and prepare your strategy!' },
-    { icon: 'âœ…', label: 'Season Created',    title: 'âœ… Season Created', body: 'A new fantasy cricket season has been created and your team has been registered. Stay tuned for auction details!' },
-    { icon: 'ðŸ†', label: 'Auction Summary',   title: 'ðŸ† Auction Complete', body: 'The auction is complete! Check your squad and start assigning Captain, Vice-Captain, and Impact Player.' },
+    { icon: '👨🏻‍⚖️', label: 'Auction Invite',    title: '🔔 Auction Invite', body: 'Your team has been invited to join the auction! Open AthenaXI and accept the invite to participate.' },
+    { icon: '⏰', label: 'Auction Reminder',  title: '⏰ Reminder', body: 'Auction starts soon! Please accept your invite and join the auction room.' },
+    { icon: '👥', label: 'Players Uploaded',  title: '👥 Player Pool Ready', body: 'The player pool and auction order have been uploaded. Browse players before auction day!' },
+    { icon: '📋', label: 'Auction Order Set', title: '📋 Auction Order Published', body: 'The auction order for upcoming season is ready. Check the player list and prepare your strategy!' },
+    { icon: '✅', label: 'Season Created',    title: '✅ Season Created', body: 'A new fantasy cricket season has been created and your team has been registered. Stay tuned for auction details!' },
+    { icon: '📊', label: 'Auction Summary',   title: '📊 Auction Complete', body: 'The auction is complete! Check your squad and start assigning Captain, Vice-Captain, and Impact Player.' },
   ];
 
   constructor(
