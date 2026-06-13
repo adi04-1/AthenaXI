@@ -228,10 +228,8 @@ public static class SeasonEndpoints
 
     private static bool IsAdminOrOwner(ClaimsPrincipal caller)
 {
-    var role = caller.FindFirst(ClaimTypes.Role)?.Value;
-
-    return role == nameof(UserRole.AppOwner)
-        || role == nameof(UserRole.LeagueAdmin);
+    return caller.IsInRole(nameof(UserRole.AppOwner))
+        || caller.IsInRole(nameof(UserRole.LeagueAdmin));
 }
 
 private static bool IsAppOwner(ClaimsPrincipal caller)

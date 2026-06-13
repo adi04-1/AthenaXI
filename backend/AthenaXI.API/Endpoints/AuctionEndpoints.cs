@@ -734,7 +734,7 @@ public static class AuctionEndpoints
 
     private static bool IsAdminOrOwner(ClaimsPrincipal caller)
     {
-        var role = caller.FindFirst("role")?.Value;
-        return role == nameof(UserRole.AppOwner) || role == nameof(UserRole.LeagueAdmin);
+        return caller.IsInRole(nameof(UserRole.AppOwner))
+        || caller.IsInRole(nameof(UserRole.LeagueAdmin));
     }
 }

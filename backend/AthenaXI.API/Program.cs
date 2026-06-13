@@ -6,12 +6,16 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Security.Claims;
 using Hangfire;
 using Hangfire.PostgreSql;
-using System.Security.Claims;
+using AthenaXI.Core.Enums;
 
+// ── CRITICAL: Prevent JWT middleware from remapping claim names ───────────────
+// Without this, "role" claim is renamed to the long URI and ALL role checks fail
 System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ─── Database ─────────────────────────────────────────────────────────────────
@@ -29,24 +33,45 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer           = true,
-            ValidateAudience         = true,
-            ValidateLifetime         = true,
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer              = builder.Configuration["Jwt:Issuer"],
-            ValidAudience            = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey         = new SymmetricSecurityKey(
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
                                            Encoding.UTF8.GetBytes(jwtKey)),
-            ClockSkew                = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero,
+            // Tell the validator where to find the role claim
+            RoleClaimType = "role",
+            NameClaimType = "uniqueName"
         };
+        options.TokenValidationParameters.RoleClaimType = ClaimTypes.Role;
     });
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("AppOwnerOnly", p =>
+        p.RequireAuthenticatedUser()
+         .RequireClaim(ClaimTypes.Role, nameof(UserRole.AppOwner)))
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("AppOwnerOnly",     p => p.RequireClaim("role", "AppOwner"));
-    options.AddPolicy("AdminOrOwner",     p => p.RequireClaim("role", "AppOwner", "LeagueAdmin"));
-    options.AddPolicy("TeamOwnerOrAbove", p => p.RequireClaim("role", "AppOwner", "LeagueAdmin", "TeamOwner"));
-});
+    .AddPolicy("AdminOrOwner", p =>
+        p.RequireAuthenticatedUser()
+         .RequireClaim(
+             ClaimTypes.Role,
+             nameof(UserRole.AppOwner),
+             nameof(UserRole.LeagueAdmin)
+         ))
+
+    .AddPolicy("TeamOwnerOrAbove", p =>
+        p.RequireAuthenticatedUser()
+         .RequireClaim(
+             ClaimTypes.Role,
+             nameof(UserRole.AppOwner),
+             nameof(UserRole.LeagueAdmin),
+             nameof(UserRole.TeamOwner)
+         ))
+
+    .AddPolicy("AnyLoggedIn", p =>
+        p.RequireAuthenticatedUser());
 
 // ─── Hangfire ─────────────────────────────────────────────────────────────────
 builder.Services.AddHangfire(config =>
@@ -72,25 +97,22 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new() { Title = "AthenaXI API", Version = "v1" });
     c.AddSecurityDefinition("Bearer", new()
     {
-        Name         = "Authorization",
-        Type         = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-        Scheme       = "bearer",
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "bearer",
         BearerFormat = "JWT",
-        In           = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description  = "Paste your JWT token here"
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Paste your JWT token"
     });
     c.AddSecurityRequirement(new()
     {
-        {
-            new() { Reference = new() { Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme, Id = "Bearer" } },
-            []
-        }
+        { new() { Reference = new() { Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme, Id = "Bearer" } }, [] }
     });
 });
 
 var app = builder.Build();
 
-// ─── Auto migrate + seed ──────────────────────────────────────────────────────
+// ─── Migrate + Seed ───────────────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AthenaXIDbContext>();
@@ -112,33 +134,26 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseHangfireDashboard("/hangfire");
 
+// ─── Debug — remove after confirming claims work ─────────────────────────────
+app.MapGet("/debug/claims", (ClaimsPrincipal caller) =>
+    Results.Ok(caller.Claims.Select(c => new { c.Type, c.Value }))).AllowAnonymous();
+
 // ─── Health ───────────────────────────────────────────────────────────────────
 app.MapGet("/health", () => Results.Ok(new
 {
-    status    = "healthy",
-    app       = "AthenaXI",
-    version   = "0.5.0",
+    status = "healthy",
+    app = "AthenaXI",
+    version = "1.0.0",
     timestamp = DateTime.UtcNow
 })).AllowAnonymous();
 
-// ── DEBUG — remove after fixing ───────────────────────────────────────────
-app.MapGet("/debug/claims", (ClaimsPrincipal caller) =>
-{
-    var claims = caller.Claims.Select(c => new { c.Type, c.Value }).ToList();
-    return Results.Ok(claims);
-}).AllowAnonymous();
-
-// ─── Routes — Days 3–9 ────────────────────────────────────────────────────────
-app.MapAuthEndpoints();           // Day 3
-app.MapSeasonEndpoints();         // Day 5
-app.MapTeamEndpoints();           // Day 6
-app.MapPlayerEndpoints();         // Day 7
-app.MapAuctionEndpoints();        // Day 8
-app.MapNotificationEndpoints();   // Day 9
-app.MapLeaderboardEndpoints();    // Day 9
-
-// Coming:
-// app.MapTransferEndpoints();    // Day 21
-// app.MapSyncEndpoints();        // Day 24
+// ─── Endpoints ────────────────────────────────────────────────────────────────
+app.MapAuthEndpoints();
+app.MapSeasonEndpoints();
+app.MapTeamEndpoints();
+app.MapPlayerEndpoints();
+app.MapAuctionEndpoints();
+app.MapNotificationEndpoints();
+app.MapLeaderboardEndpoints();
 
 app.Run();

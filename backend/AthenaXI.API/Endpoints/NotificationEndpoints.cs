@@ -30,7 +30,7 @@ public static class NotificationEndpoints
                 .ToListAsync();
 
             return Results.Ok(notifications);
-        }).RequireAuthorization();
+        }).RequireAuthorization("AnyLoggedIn");
 
         // ── GET /api/notifications/unread-count ───────────────────────────────
         group.MapGet("/unread-count", async (
@@ -41,7 +41,7 @@ public static class NotificationEndpoints
             var count  = await db.Notifications
                 .CountAsync(n => n.UserId == userId && !n.IsRead);
             return Results.Ok(new { count });
-        }).RequireAuthorization();
+        }).RequireAuthorization("AnyLoggedIn");
 
         // ── PUT /api/notifications/{id}/read ──────────────────────────────────
         group.MapPut("/{id:guid}/read", async (
@@ -57,7 +57,7 @@ public static class NotificationEndpoints
             notif.IsRead = true;
             await db.SaveChangesAsync();
             return Results.Ok(new { message = "Marked as read." });
-        }).RequireAuthorization();
+        }).RequireAuthorization("AnyLoggedIn");
 
         // ── PUT /api/notifications/read-all ───────────────────────────────────
         group.MapPut("/read-all", async (
@@ -69,7 +69,7 @@ public static class NotificationEndpoints
                 .Where(n => n.UserId == userId && !n.IsRead)
                 .ExecuteUpdateAsync(s => s.SetProperty(n => n.IsRead, true));
             return Results.Ok(new { message = "All notifications marked as read." });
-        }).RequireAuthorization();
+        }).RequireAuthorization("AnyLoggedIn");
 
         // ── POST /api/notifications/send ──────────────────────────────────────
         // Admin sends manual notification
@@ -111,7 +111,7 @@ public static class NotificationEndpoints
             await db.SaveChangesAsync();
 
             return Results.Ok(new { message = $"Notification sent to {notifications.Count} user(s)." });
-        }).RequireAuthorization();
+        }).RequireAuthorization("AdminOrOwner");
     }
 
     // ── Static helper — used by other services ────────────────────────────────
@@ -155,7 +155,7 @@ public static class NotificationEndpoints
 
     private static bool IsAdminOrOwner(ClaimsPrincipal caller)
     {
-        var role = caller.FindFirst("role")?.Value;
-        return role == nameof(UserRole.AppOwner) || role == nameof(UserRole.LeagueAdmin);
+        return caller.IsInRole(nameof(UserRole.AppOwner))
+        || caller.IsInRole(nameof(UserRole.LeagueAdmin));
     }
 }
