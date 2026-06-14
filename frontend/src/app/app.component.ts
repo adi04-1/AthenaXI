@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
 import { AuthService } from './core/services/auth.service';
 import { NotificationService } from './core/services/notification.service';
+import { SeasonService } from './core/services/season.service';
 
 @Component({
   selector: 'app-root',
@@ -11,9 +12,7 @@ import { NotificationService } from './core/services/notification.service';
   imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
   template: `
     <div class="app-shell">
-
-      <!-- Top Bar â€” hidden inside /admin -->
-      @if (auth.isLoggedIn()) {
+      @if (auth.isLoggedIn() && !isAdminRoute()) {
         <header class="athena-topbar">
           <span class="athena-brand">AthenaXI</span>
           <div class="topbar-right">
@@ -22,20 +21,17 @@ import { NotificationService } from './core/services/notification.service';
               <span class="athena-badge athena-badge-gold">{{ auth.profile()?.role }}</span>
             </div>
             @if (auth.isAdmin()) {
-              <a routerLink="/admin" class="topbar-admin-btn">Admin</a>
+              <a routerLink="/admin" class="topbar-link">Admin</a>
             }
-            <button class="topbar-logout-btn" (click)="auth.logout()">Logout</button>
+            <button class="topbar-logout" (click)="auth.logout()">Logout</button>
           </div>
         </header>
       }
-
-
 
       <main class="page-content">
         <router-outlet />
       </main>
 
-      <!-- Bottom Nav â€” ONLY on non-admin routes, only for logged in users -->
       @if (auth.isLoggedIn() && !isAdminRoute()) {
         <nav class="athena-bottom-nav">
           <a routerLink="/leaderboard" routerLinkActive="active" class="athena-nav-item">
@@ -44,11 +40,10 @@ import { NotificationService } from './core/services/notification.service';
           </a>
           @if (auth.isAdmin()) {
             <a routerLink="/admin" class="athena-nav-item">
-              <span class="nav-icon-text">ADM</span>
+              <span class="nav-icon-text">ADMIN</span>
               <span class="nav-label">Admin</span>
             </a>
-          }
-          @if (!auth.isAdmin()) {
+          } @else {
             <a routerLink="/auction" routerLinkActive="active" class="athena-nav-item">
               <span class="nav-icon-text">AUC</span>
               <span class="nav-label">Auction</span>
@@ -62,7 +57,7 @@ import { NotificationService } from './core/services/notification.service';
               <span class="nav-label">Transfers</span>
             </a>
           }
-          <a routerLink="/notifications" routerLinkActive="active" class="athena-nav-item notif-wrap">
+          <a routerLink="/notifications" routerLinkActive="active" class="athena-nav-item notif-item">
             <span class="nav-icon-text">
               BELL
               @if (notifSvc.unreadCount() > 0) {
@@ -76,78 +71,39 @@ import { NotificationService } from './core/services/notification.service';
     </div>
   `,
   styles: [`
-    .app-shell {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    .page-content { flex: 1; }
-
-    /* Topbar */
-    .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .user-info { display: flex; align-items: center; gap: 8px; }
-    .user-name { font-size: 13px; color: #ccc; font-weight: 600; font-family: var(--font-body); }
-    .topbar-admin-btn {
-      font-family: var(--font-body); font-size: 12px; font-weight: 700;
-      color: var(--gold); text-decoration: none;
-      border: 1px solid rgba(212,175,55,0.3); border-radius: 6px;
-      padding: 4px 10px; transition: all 0.15s;
-    }
-    .topbar-admin-btn:hover { background: rgba(212,175,55,0.1); }
-    .topbar-logout-btn {
-      font-family: var(--font-body); font-size: 12px; color: #666;
-      background: none; border: 1px solid #333; border-radius: 6px;
-      padding: 4px 10px; cursor: pointer; transition: all 0.15s;
-    }
-    .topbar-logout-btn:hover { color: #fff; border-color: #555; }
-
-    /* Bottom nav â€” text labels instead of emojis */
-    .app-shell { padding-bottom: 70px; }
-    .nav-icon-text {
-      font-family: var(--font-timer);
-      font-size: 10px;
-      font-weight: 900;
-      letter-spacing: 0.06em;
-      color: inherit;
-      position: relative;
-      display: block;
-    }
-    .notif-wrap { position: relative; }
-    .notif-dot {
-      position: absolute;
-      top: -2px; right: -4px;
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--red-live);
-      box-shadow: 0 0 4px var(--red-live);
-    }
-
-    /* Hide bottom padding in admin */
-    @media (min-width: 1024px) {
-      .athena-bottom-nav { display: none; }
-      .app-shell { padding-bottom: 0; }
-    }
+    .app-shell { min-height:100vh; display:flex; flex-direction:column; padding-bottom:70px; }
+    .page-content { flex:1; }
+    .topbar-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .user-info { display:flex; align-items:center; gap:8px; }
+    .user-name { font-size:13px; color:#ccc; font-weight:600; font-family:var(--font-body); }
+    .topbar-link { font-size:12px; font-weight:700; color:var(--gold); text-decoration:none; border:1px solid rgba(212,175,55,0.3); border-radius:6px; padding:4px 10px; }
+    .topbar-logout { font-size:12px; color:#666; background:none; border:1px solid #333; border-radius:6px; padding:4px 10px; cursor:pointer; }
+    .topbar-logout:hover { color:#fff; border-color:#555; }
+    .notif-item { position:relative; }
+    .nav-icon-text { font-family:var(--font-timer); font-size:10px; font-weight:900; letter-spacing:0.06em; display:block; position:relative; }
+    .notif-dot { position:absolute; top:-3px; right:-5px; width:7px; height:7px; border-radius:50%; background:var(--red-live); }
+    @media (min-width:1024px) { .athena-bottom-nav { display:none; } .app-shell { padding-bottom:0; } }
   `]
 })
 export class AppComponent implements OnInit {
-  private currentUrl = '';
+  private url = '';
 
   constructor(
     public auth: AuthService,
     public notifSvc: NotificationService,
+    private seasonSvc: SeasonService,
     private router: Router
   ) {
-    this.router.events.pipe(
-      filter(e => e instanceof NavigationEnd)
-    ).subscribe((e: any) => this.currentUrl = e.urlAfterRedirects);
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd))
+      .subscribe((e: any) => this.url = e.urlAfterRedirects);
   }
 
   ngOnInit() {
     if (this.auth.isLoggedIn()) {
       this.notifSvc.refreshUnreadCount().subscribe();
+      this.seasonSvc.loadAndCacheActive();
     }
   }
 
-  isAdminRoute() { return this.currentUrl.startsWith('/admin'); }
-  isAdmin() { return this.auth.isAdmin(); }
+  isAdminRoute() { return this.url.startsWith('/admin'); }
 }

@@ -6,6 +6,7 @@ import { interval, Subscription } from 'rxjs';
 import { AuctionService } from '../../core/services/auction.service';
 import { AuthService } from '../../core/services/auth.service';
 import { TeamService } from '../../core/services/team.service';
+import { SeasonService } from '../../core/services/season.service';
 
 @Component({
   selector: 'app-auction-room',
@@ -568,8 +569,7 @@ export class AuctionRoomComponent implements OnInit, OnDestroy {
 
   private pollSub?: Subscription;
   private timerSub?: Subscription;
-  private seasonId = '00000000-0000-0000-0000-000000000001'; // TODO: load from active season
-
+  private get seasonId(): string { return this.seasonSvc.activeSeason()?.id ?? '1c18af32-c612-4a60-bd04-dffcbee185ff'; }
   isLive        = computed(() => this.session()?.status === 'InProgress');
   currentPlayer = computed(() => this.session()?.currentPlayer ?? null);
   currentBid    = computed(() => this.currentPlayer()?.currentBidCr ?? this.currentPlayer()?.basePriceCr ?? 0);
@@ -585,6 +585,7 @@ export class AuctionRoomComponent implements OnInit, OnDestroy {
   constructor(
     private auctionSvc: AuctionService,
     private teamSvc: TeamService,
+    private seasonSvc: SeasonService,
     public auth: AuthService
   ) {}
 

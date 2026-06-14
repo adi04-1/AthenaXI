@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { SeasonService } from '../../core/services/season.service';
 import { PlayerService } from '../../core/services/player.service';
 import { read, utils } from 'xlsx';
+import { TeamService } from '../../core/services/team.service';
 
 @Component({
   selector: 'app-admin-players',
@@ -18,8 +19,12 @@ import { read, utils } from 'xlsx';
         </div>
       </div>
 
-      @if (error()) { <div class="athena-error animate-fade-in">{{ error() }}</div> }
-      @if (success()) { <div class="athena-success animate-fade-in">{{ success() }}</div> }
+      @if (error()) {
+        <div class="athena-error animate-fade-in">{{ error() }}</div>
+      }
+      @if (success()) {
+        <div class="athena-success animate-fade-in">{{ success() }}</div>
+      }
 
       <!-- Step 1 — Select Season -->
       <div class="wizard-step athena-card" [class.done]="selectedSeason()">
@@ -32,7 +37,13 @@ import { read, utils } from 'xlsx';
             <div class="athena-label">Choose which season to upload players for</div>
           </div>
           @if (selectedSeason()) {
-            <button class="athena-btn athena-btn-secondary" style="margin-left:auto;padding:6px 12px;font-size:12px" (click)="reset()">Change</button>
+            <button
+              class="athena-btn athena-btn-secondary"
+              style="margin-left:auto;padding:6px 12px;font-size:12px"
+              (click)="reset()"
+            >
+              Change
+            </button>
           }
         </div>
 
@@ -46,7 +57,9 @@ import { read, utils } from 'xlsx';
                   <button class="season-select-btn" (click)="selectSeason(s)">
                     <div>
                       <span class="season-sel-name">{{ s.name }}</span>
-                      <span class="athena-badge athena-badge-surface" style="margin-left:8px">{{ modeLabel(s.mode) }}</span>
+                      <span class="athena-badge athena-badge-surface" style="margin-left:8px">{{
+                        modeLabel(s.mode)
+                      }}</span>
                     </div>
                     <span class="athena-label">{{ s.status }}</span>
                   </button>
@@ -57,7 +70,9 @@ import { read, utils } from 'xlsx';
         } @else {
           <div class="selected-season-display">
             <span class="season-sel-name">{{ selectedSeason().name }}</span>
-            <span class="athena-badge athena-badge-gold">{{ modeLabel(selectedSeason().mode) }}</span>
+            <span class="athena-badge athena-badge-gold">{{
+              modeLabel(selectedSeason().mode)
+            }}</span>
           </div>
         }
       </div>
@@ -81,7 +96,12 @@ import { read, utils } from 'xlsx';
                 <div class="template-name">{{ templateName() }}</div>
                 <div class="template-sheets">{{ templateSheets() }}</div>
               </div>
-              <a [href]="templateUrl()" download class="athena-btn athena-btn-primary" style="margin-left:auto;text-decoration:none;padding:8px 16px;font-size:13px">
+              <a
+                [href]="templateUrl()"
+                download
+                class="athena-btn athena-btn-primary"
+                style="margin-left:auto;text-decoration:none;padding:8px 16px;font-size:13px"
+              >
                 ⬇️ Download
               </a>
             </div>
@@ -102,15 +122,24 @@ import { read, utils } from 'xlsx';
             <div>
               <div class="step-title">Upload File</div>
               <div class="athena-label">
-                @if (uploadDone()) { Upload complete — locked for this season. }
-                @else { Upload only once — re-upload requires starting over. }
+                @if (uploadDone()) {
+                  Upload complete — locked for this season.
+                } @else {
+                  Upload only once — re-upload requires starting over.
+                }
               </div>
             </div>
           </div>
 
           @if (!uploadDone()) {
             <div class="upload-area" (click)="fileInput.click()" [class.has-file]="selectedFile()">
-              <input #fileInput type="file" accept=".xlsx,.xls" style="display:none" (change)="onFile($event)" />
+              <input
+                #fileInput
+                type="file"
+                accept=".xlsx,.xls"
+                style="display:none"
+                (change)="onFile($event)"
+              />
               @if (selectedFile()) {
                 <span style="font-size:32px">✅</span>
                 <span class="upload-filename">{{ selectedFile()!.name }}</span>
@@ -123,20 +152,28 @@ import { read, utils } from 'xlsx';
             </div>
 
             @if (selectedFile()) {
-              <button class="athena-btn athena-btn-primary" style="width:100%;margin-top:12px"
-                (click)="processUpload()" [disabled]="saving()">
+              <button
+                class="athena-btn athena-btn-primary"
+                style="width:100%;margin-top:12px"
+                (click)="processUpload()"
+                [disabled]="saving()"
+              >
                 {{ saving() ? '⚙️ Processing...' : '⚔️ Upload & Process' }}
               </button>
             }
           } @else {
             <div class="upload-result-display">
               <div class="result-stat">
-                <span class="result-num" style="color:var(--green-cricket)">{{ uploadResult().imported }}</span>
+                <span class="result-num" style="color:var(--green-cricket)">{{
+                  uploadResult().imported
+                }}</span>
                 <span class="athena-label">Imported</span>
               </div>
               @if (uploadResult().skipped > 0) {
                 <div class="result-stat">
-                  <span class="result-num" style="color:var(--gold)">{{ uploadResult().skipped }}</span>
+                  <span class="result-num" style="color:var(--gold)">{{
+                    uploadResult().skipped
+                  }}</span>
                   <span class="athena-label">Skipped</span>
                 </div>
               }
@@ -153,80 +190,349 @@ import { read, utils } from 'xlsx';
       }
     </div>
   `,
-  styles: [`
-    .admin-page { padding: 28px 24px; max-width: 720px; }
-    .admin-page-header { margin-bottom: 24px; }
-    .wizard-step { padding: 20px; margin-bottom: 16px; }
-    .wizard-step.done { opacity: 0.8; }
-    .step-header { display: flex; align-items: flex-start; gap: 14px; }
-    .step-num { width: 32px; height: 32px; border-radius: 50%; background: rgba(212,175,55,0.15); border: 1px solid rgba(212,175,55,0.3); display: flex; align-items: center; justify-content: center; font-family: var(--font-timer); font-size: 14px; font-weight: 900; color: var(--gold); flex-shrink: 0; }
-    .step-num.complete { background: rgba(0,200,83,0.15); border-color: rgba(0,200,83,0.3); color: var(--green-cricket); }
-    .step-title { font-family: var(--font-body); font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 2px; }
-    .season-select-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
-    .season-select-btn { background: rgba(10,31,47,0.6); border: 1px solid rgba(212,175,55,0.1); border-radius: var(--radius-md); padding: 14px 16px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.15s; text-align: left; }
-    .season-select-btn:hover { border-color: rgba(212,175,55,0.4); background: rgba(30,58,95,0.4); }
-    .season-sel-name { font-family: var(--font-body); font-size: 15px; font-weight: 700; color: #fff; }
-    .selected-season-display { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 12px 14px; background: rgba(10,31,47,0.5); border-radius: var(--radius-md); }
-    .template-info { margin-top: 16px; }
-    .template-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: var(--radius-md); margin-bottom: 12px; }
-    .template-card.fresh { background: rgba(0,200,83,0.08); border: 1px solid rgba(0,200,83,0.2); }
-    .template-card.retention { background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.2); }
-    .template-card.direct { background: rgba(45,156,219,0.08); border: 1px solid rgba(45,156,219,0.2); }
-    .template-icon { font-size: 28px; }
-    .template-name { font-family: var(--font-body); font-size: 14px; font-weight: 700; color: #fff; }
-    .template-sheets { font-size: 12px; color: #888; margin-top: 2px; }
-    .template-rules { display: flex; flex-direction: column; gap: 6px; }
-    .rule-row { font-family: var(--font-body); font-size: 12px; color: #888; }
-    .upload-area { border: 2px dashed rgba(212,175,55,0.2); border-radius: var(--radius-lg); padding: 36px; text-align: center; cursor: pointer; margin-top: 16px; transition: all 0.15s; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-    .upload-area:hover, .upload-area.has-file { border-color: var(--gold); background: rgba(212,175,55,0.04); }
-    .upload-filename { font-family: var(--font-body); font-size: 14px; color: #ccc; font-weight: 600; }
-    .upload-result-display { display: flex; gap: 24px; margin-top: 16px; flex-wrap: wrap; }
-    .result-stat { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .result-num { font-family: var(--font-timer); font-size: 32px; font-weight: 900; }
-    .result-errors { margin-top: 12px; background: rgba(58,10,10,0.5); border-radius: var(--radius-md); padding: 12px; max-height: 120px; overflow-y: auto; }
-    .err-line { font-size: 12px; color: #f87171; padding: 2px 0; }
-  `]
+  styles: [
+    `
+      .admin-page {
+        padding: 28px 24px;
+        max-width: 720px;
+      }
+      .admin-page-header {
+        margin-bottom: 24px;
+      }
+      .wizard-step {
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+      .wizard-step.done {
+        opacity: 0.8;
+      }
+      .step-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+      }
+      .step-num {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(212, 175, 55, 0.15);
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-timer);
+        font-size: 14px;
+        font-weight: 900;
+        color: var(--gold);
+        flex-shrink: 0;
+      }
+      .step-num.complete {
+        background: rgba(0, 200, 83, 0.15);
+        border-color: rgba(0, 200, 83, 0.3);
+        color: var(--green-cricket);
+      }
+      .step-title {
+        font-family: var(--font-body);
+        font-size: 15px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 2px;
+      }
+      .season-select-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 4px;
+      }
+      .season-select-btn {
+        background: rgba(10, 31, 47, 0.6);
+        border: 1px solid rgba(212, 175, 55, 0.1);
+        border-radius: var(--radius-md);
+        padding: 14px 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.15s;
+        text-align: left;
+      }
+      .season-select-btn:hover {
+        border-color: rgba(212, 175, 55, 0.4);
+        background: rgba(30, 58, 95, 0.4);
+      }
+      .season-sel-name {
+        font-family: var(--font-body);
+        font-size: 15px;
+        font-weight: 700;
+        color: #fff;
+      }
+      .selected-season-display {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+        padding: 12px 14px;
+        background: rgba(10, 31, 47, 0.5);
+        border-radius: var(--radius-md);
+      }
+      .template-info {
+        margin-top: 16px;
+      }
+      .template-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        border-radius: var(--radius-md);
+        margin-bottom: 12px;
+      }
+      .template-card.fresh {
+        background: rgba(0, 200, 83, 0.08);
+        border: 1px solid rgba(0, 200, 83, 0.2);
+      }
+      .template-card.retention {
+        background: rgba(212, 175, 55, 0.08);
+        border: 1px solid rgba(212, 175, 55, 0.2);
+      }
+      .template-card.direct {
+        background: rgba(45, 156, 219, 0.08);
+        border: 1px solid rgba(45, 156, 219, 0.2);
+      }
+      .template-icon {
+        font-size: 28px;
+      }
+      .template-name {
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+      }
+      .template-sheets {
+        font-size: 12px;
+        color: #888;
+        margin-top: 2px;
+      }
+      .template-rules {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .rule-row {
+        font-family: var(--font-body);
+        font-size: 12px;
+        color: #888;
+      }
+      .upload-area {
+        border: 2px dashed rgba(212, 175, 55, 0.2);
+        border-radius: var(--radius-lg);
+        padding: 36px;
+        text-align: center;
+        cursor: pointer;
+        margin-top: 16px;
+        transition: all 0.15s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+      .upload-area:hover,
+      .upload-area.has-file {
+        border-color: var(--gold);
+        background: rgba(212, 175, 55, 0.04);
+      }
+      .upload-filename {
+        font-family: var(--font-body);
+        font-size: 14px;
+        color: #ccc;
+        font-weight: 600;
+      }
+      .upload-result-display {
+        display: flex;
+        gap: 24px;
+        margin-top: 16px;
+        flex-wrap: wrap;
+      }
+      .result-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+      .result-num {
+        font-family: var(--font-timer);
+        font-size: 32px;
+        font-weight: 900;
+      }
+      .result-errors {
+        margin-top: 12px;
+        background: rgba(58, 10, 10, 0.5);
+        border-radius: var(--radius-md);
+        padding: 12px;
+        max-height: 120px;
+        overflow-y: auto;
+      }
+      .err-line {
+        font-size: 12px;
+        color: #f87171;
+        padding: 2px 0;
+      }
+    `,
+  ],
 })
 export class PlayersAdminComponent implements OnInit {
-  seasons        = signal<any[]>([]);
+  seasons = signal<any[]>([]);
   selectedSeason = signal<any>(null);
   loadingSeasons = signal(true);
-  saving         = signal(false);
-  uploadDone     = signal(false);
-  uploadResult   = signal<any>(null);
-  selectedFile   = signal<File|null>(null);
-  error          = signal('');
-  success        = signal('');
+  saving = signal(false);
+  uploadDone = signal(false);
+  uploadResult = signal<any>(null);
+  selectedFile = signal<File | null>(null);
+  error = signal('');
+  success = signal('');
 
-  constructor(private seasonSvc: SeasonService, private playerSvc: PlayerService) {}
+  constructor(
+    private seasonSvc: SeasonService,
+    private playerSvc: PlayerService,
+    private teamSvc: TeamService,
+  ) {}
 
   ngOnInit() {
     this.seasonSvc.getAll().subscribe({
-      next: d => { this.seasons.set(d.filter((s: any) => s.status !== 'Completed')); this.loadingSeasons.set(false); },
-      error: () => this.loadingSeasons.set(false)
+      next: (d) => {
+        this.seasons.set(d.filter((s: any) => s.status !== 'Completed'));
+        this.loadingSeasons.set(false);
+      },
+      error: () => this.loadingSeasons.set(false),
     });
   }
 
-  selectSeason(s: any) { this.selectedSeason.set(s); }
-  reset() { this.selectedSeason.set(null); this.uploadDone.set(false); this.selectedFile.set(null); this.uploadResult.set(null); }
-  onFile(e: any) { const f = e.target.files?.[0]; if (f) { this.selectedFile.set(f); this.error.set(''); } }
+  selectSeason(s: any) {
+    this.selectedSeason.set(s);
+  }
+  reset() {
+    this.selectedSeason.set(null);
+    this.uploadDone.set(false);
+    this.selectedFile.set(null);
+    this.uploadResult.set(null);
+  }
+  onFile(e: any) {
+    const f = e.target.files?.[0];
+    if (f) {
+      this.selectedFile.set(f);
+      this.error.set('');
+    }
+  }
 
-  templateName() { const m = this.selectedSeason()?.mode; return m === 'FreshAuction' ? 'Fresh Auction Template' : m === 'AuctionWithRetentions' ? 'Retention Auction Template' : 'Direct Allocation Template'; }
-  templateIcon() { return { FreshAuction:'🏏', AuctionWithRetentions:'🔄', DirectAllocation:'📋' }[this.selectedSeason()?.mode as string] ?? '📁'; }
-  templateStyle() { return { FreshAuction:'fresh', AuctionWithRetentions:'retention', DirectAllocation:'direct' }[this.selectedSeason()?.mode as string] ?? ''; }
-  templateSheets() { return { FreshAuction:'2 sheets: Player Pool + Auction Order', AuctionWithRetentions:'3 sheets: Player Pool + Auction Order + Retentions', DirectAllocation:'1 sheet: Final Roster' }[this.selectedSeason()?.mode as string] ?? ''; }
-  templateUrl() { return `/assets/templates/template_${this.selectedSeason()?.mode?.toLowerCase()}.xlsx`; }
+  templateName() {
+    const m = this.selectedSeason()?.mode;
+    return m === 'FreshAuction'
+      ? 'Fresh Auction Template'
+      : m === 'AuctionWithRetentions'
+        ? 'Retention Auction Template'
+        : 'Direct Allocation Template';
+  }
+  templateIcon() {
+    return (
+      { FreshAuction: '🏏', AuctionWithRetentions: '🔄', DirectAllocation: '📋' }[
+        this.selectedSeason()?.mode as string
+      ] ?? '📁'
+    );
+  }
+  templateStyle() {
+    return (
+      { FreshAuction: 'fresh', AuctionWithRetentions: 'retention', DirectAllocation: 'direct' }[
+        this.selectedSeason()?.mode as string
+      ] ?? ''
+    );
+  }
+  templateSheets() {
+    return (
+      {
+        FreshAuction: '2 sheets: Player Pool + Auction Order',
+        AuctionWithRetentions: '3 sheets: Player Pool + Auction Order + Retentions',
+        DirectAllocation: '1 sheet: Final Roster',
+      }[this.selectedSeason()?.mode as string] ?? ''
+    );
+  }
+  templateUrl() {
+    const modeMap: any = {
+      FreshAuction: 'freshauction',
+      AuctionWithRetentions: 'auctionwithretentions',
+      DirectAllocation: 'directallocation',
+    };
+    const key = modeMap[this.selectedSeason()?.mode] ?? 'freshauction';
+    return `assets/templates/template_${key}.xlsx`;
+  }
+
+  normalizePlayer(r: any) {
+    return {
+      playerName: String(this.getValue(r, 'player_name')).trim(),
+
+      iplTeam: String(this.getValue(r, 'ipl_team')).trim(),
+
+      role: String(this.getValue(r, 'role')).trim(),
+
+      isOverseas: String(this.getValue(r, 'is_overseas')).toUpperCase() === 'TRUE',
+
+      isUncapped: String(this.getValue(r, 'is_uncapped')).toUpperCase() === 'TRUE',
+
+      basePriceCr: Number(this.getValue(r, 'base_price_cr')) || 0,
+
+      nationality: this.getValue(r, 'nationality') || null,
+
+      battingStyle: this.getValue(r, 'batting_style') || null,
+
+      bowlingStyle: this.getValue(r, 'bowling_style') || null,
+
+      notes: this.getValue(r, 'notes') || null,
+    };
+  }
+
+  private normalizeOrder(r: any) {
+    return {
+      auctionOrder: Number(this.getValue(r, 'auction_order')) || 0,
+
+      playerName: String(this.getValue(r, 'player_name')).trim(),
+
+      auctionSet: String(this.getValue(r, 'auction_set')).trim(),
+
+      basePriceCr: Number(this.getValue(r, 'base_price_cr')) || 2,
+
+      bidIncrementCr: Number(this.getValue(r, 'bid_increment_cr')) || 1,
+
+      rtmTeam: String(this.getValue(r, 'rtm_team')).trim(),
+
+      setDisplayName: String(this.getValue(r, 'set_display_name')).trim(),
+
+      notes: String(this.getValue(r, 'notes')).trim(),
+    };
+  }
   templateRules() {
-    const base = ['player_name and ipl_team are required', 'Role: Batsman / Bowler / AllRounder / WicketKeeper', 'is_overseas and is_uncapped: TRUE or FALSE'];
-    if (this.selectedSeason()?.mode === 'AuctionWithRetentions') base.push('Retentions sheet: team_code, player_name, retention_cost_cr, slot');
+    const base = [
+      'player_name and ipl_team are required',
+      'Role: Batsman / Bowler / AllRounder / WicketKeeper',
+      'is_overseas and is_uncapped: TRUE or FALSE',
+    ];
+    if (this.selectedSeason()?.mode === 'AuctionWithRetentions')
+      base.push('Retentions sheet: team_code, player_name, retention_cost_cr, slot');
     return base;
   }
-  modeLabel(m: string) { return { FreshAuction:'🟢 Fresh', AuctionWithRetentions:'🟡 Retention', DirectAllocation:'🔵 Direct' }[m] ?? m; }
+  modeLabel(m: string) {
+    return (
+      {
+        FreshAuction: '🟢 Fresh',
+        AuctionWithRetentions: '🟡 Retention',
+        DirectAllocation: '🔵 Direct',
+      }[m] ?? m
+    );
+  }
 
   processUpload() {
-    const file = this.selectedFile(); const season = this.selectedSeason();
+    const file = this.selectedFile();
+    const season = this.selectedSeason();
     if (!file || !season) return;
-    this.saving.set(true); this.error.set('');
+    this.saving.set(true);
+    this.error.set('');
     const reader = new FileReader();
     reader.onload = (e: any) => {
       try {
@@ -234,34 +540,139 @@ export class PlayersAdminComponent implements OnInit {
         if (season.mode === 'DirectAllocation') {
           const rows = utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
           this.playerSvc.uploadDirectAllocation(season.id, rows as any[]).subscribe({
-            next: r => { this.uploadResult.set(r); this.uploadDone.set(true); this.saving.set(false); this.success.set('Rosters uploaded! Season is now InProgress.'); },
-            error: e => { this.error.set(e?.error?.error ?? 'Upload failed.'); this.saving.set(false); }
+            next: (r) => {
+              this.uploadResult.set(r);
+              this.uploadDone.set(true);
+              this.saving.set(false);
+              this.success.set('Rosters uploaded! Season is now InProgress.');
+            },
+            error: (e) => {
+              this.error.set(e?.error?.error ?? 'Upload failed.');
+              this.saving.set(false);
+            },
           });
         } else {
           const poolSheet = wb.Sheets['Player Pool'] ?? wb.Sheets[wb.SheetNames[0]];
           const orderSheet = wb.Sheets['Auction Order'] ?? wb.Sheets[wb.SheetNames[1]];
-          const poolRows = utils.sheet_to_json(poolSheet) as any[];
-          const orderRows = utils.sheet_to_json(orderSheet) as any[];
-          this.playerSvc.uploadPlayers(poolRows).subscribe({
-            next: poolRes => {
-              this.playerSvc.uploadAuctionOrder(season.id, orderRows).subscribe({
-                next: orderRes => {
-                  const result = { imported: poolRes.imported, skipped: poolRes.skipped, errors: [...(poolRes.errors||[]), ...(orderRes.errors||[])] };
+          const poolRows = this.sheetToRows(poolSheet, ['player_name']);
+          const orderRows = this.sheetToRows(orderSheet, ['player_name']);
+          const normalizedPool = poolRows.map((r) => this.normalizePlayer(r));
+          const normalizedOrder = orderRows.map((r) => this.normalizeOrder(r));
+          console.log('PLAYER PAYLOAD', normalizedPool);
+          console.log('ORDER PAYLOAD', normalizedOrder);
+
+          this.playerSvc.uploadPlayers(normalizedPool).subscribe({
+            next: (poolRes) => {
+              this.playerSvc.uploadAuctionOrder(season.id, normalizedOrder).subscribe({
+                next: (orderRes) => {
+                  const result = {
+                    imported: poolRes.imported,
+                    skipped: poolRes.skipped,
+                    errors: [...(poolRes.errors || []), ...(orderRes.errors || [])],
+                  };
                   if (season.mode === 'AuctionWithRetentions' && wb.SheetNames[2]) {
-                    const retRows = utils.sheet_to_json(wb.Sheets[wb.SheetNames[2]]) as any[];
-                    this.playerSvc.uploadPlayers(retRows).subscribe({ next: () => {}, error: () => {} });
+                    const retSheet = wb.Sheets[wb.SheetNames[2]];
+                    const rawRet = utils.sheet_to_json(retSheet, {
+                      header: 1,
+                      raw: false,
+                    }) as any[];
+                    console.log('RET RAW:', rawRet);
+                    const retHeaderIndex = rawRet.findIndex(
+                      (row) => row.includes('player_name ★') || row.includes('player_name'),
+                    );
+                    if (retHeaderIndex !== -1) {
+                      const retHeaders = rawRet[retHeaderIndex];
+                      const retRows = rawRet.slice(retHeaderIndex + 1).map((row) => {
+                        const obj: any = {};
+                        retHeaders.forEach((h: string, i: number) => {
+                          obj[h] = row[i];
+                        });
+                        return obj;
+                      });
+                      console.log('RET FIXED:', retRows);
+                      const normalizedRetention = retRows.map((r: any) => ({
+                        teamCode: String(this.getValue(r, 'team_code')),
+                        playerName: String(this.getValue(r, 'player_name')),
+                        retentionCostCr: Number(this.getValue(r, 'retention_cost_cr')) || 0,
+                        slot: Number(this.getValue(r, 'slot')) || 1,
+                      }));
+                      this.teamSvc
+                        .uploadRetentions({
+                          seasonId: season.id,
+                          retentions: normalizedRetention,
+                        })
+                        .subscribe({
+                          next: () => {},
+                          error: () => {},
+                        });
+                    }
                   }
-                  this.uploadResult.set(result); this.uploadDone.set(true); this.saving.set(false);
+                  this.uploadResult.set(result);
+                  this.uploadDone.set(true);
+                  this.saving.set(false);
                   this.success.set('Players and auction order uploaded successfully!');
                 },
-                error: e => { this.error.set(e?.error?.error ?? 'Auction order upload failed.'); this.saving.set(false); }
+                error: (e) => {
+                  this.error.set(e?.error?.error ?? 'Auction order upload failed.');
+                  this.saving.set(false);
+                },
               });
             },
-            error: e => { this.error.set(e?.error?.error ?? 'Player upload failed.'); this.saving.set(false); }
+            error: (e) => {
+              this.error.set(e?.error?.error ?? 'Player upload failed.');
+              this.saving.set(false);
+            },
           });
         }
-      } catch { this.error.set('Could not read file. Please use a valid .xlsx file.'); this.saving.set(false); }
+      } catch {
+        this.error.set('Could not read file. Please use a valid .xlsx file.');
+        this.saving.set(false);
+      }
     };
     reader.readAsArrayBuffer(file);
+  }
+  private cleanKey(k: string) {
+    return String(k)
+      .replace('★', '')
+      .replace(/\uFEFF/g, '')
+      .trim()
+      .replace(/\s+/g, '_')
+      .toLowerCase();
+  }
+
+  private sheetToRows(sheet: any, requiredKey: string[]) {
+    const raw = utils.sheet_to_json(sheet, {
+      header: 1,
+      raw: false,
+    }) as any[];
+
+    const headerIndex = raw.findIndex((row) =>
+      row.some((x: any) => requiredKey.includes(this.cleanKey(x))),
+    );
+
+    if (headerIndex === -1) {
+      throw new Error(`Header not found ${requiredKey}`);
+    }
+
+    const headers = raw[headerIndex];
+
+    return raw
+      .slice(headerIndex + 1)
+      .filter((r) => r.some((x: any) => x !== undefined && x !== ''))
+      .map((row) => {
+        const obj: any = {};
+
+        headers.forEach((h: string, i: number) => {
+          obj[h] = row[i];
+        });
+
+        return obj;
+      });
+  }
+
+  private getValue(row: any, key: string) {
+    const found = Object.keys(row).find((k) => this.cleanKey(k) === this.cleanKey(key));
+
+    return found ? row[found] : '';
   }
 }
