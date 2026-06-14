@@ -21,8 +21,7 @@ public static class AuthEndpoints
             TokenService tokenSvc,
             ClaimsPrincipal caller) =>
         {
-            var callerRole = caller.FindFirst(ClaimTypes.Role)?.Value;
-            if (callerRole != nameof(UserRole.AppOwner))
+            if (!caller.IsInRole(nameof(UserRole.AppOwner)))
                 return Results.Forbid();
 
             if (await db.Users.AnyAsync(u => u.Username == req.Username))
@@ -99,12 +98,8 @@ public static class AuthEndpoints
             TokenService tokenSvc,
             ClaimsPrincipal caller) =>
         {
-            var callerRole = caller.FindFirst(ClaimTypes.Role)?.Value;
-            if (!caller.IsInRole(nameof(UserRole.AppOwner)) &&
-                !caller.IsInRole(nameof(UserRole.LeagueAdmin)))
-            {
+            if (!caller.IsInRole(nameof(UserRole.AppOwner)) && !caller.IsInRole(nameof(UserRole.LeagueAdmin)))
                 return Results.Forbid();
-            }
 
             if (await db.Users.AnyAsync(u => u.Username == req.Username.Trim().ToLower()))
                 return Results.Conflict(new { error = "Username already taken." });
@@ -155,8 +150,7 @@ public static class AuthEndpoints
             TokenService tokenSvc,
             ClaimsPrincipal caller) =>
         {
-            var callerRole = caller.FindFirst(ClaimTypes.Role)?.Value;
-            if (callerRole != nameof(UserRole.AppOwner))
+            if (!caller.IsInRole(nameof(UserRole.AppOwner)))
                 return Results.Forbid();
 
             var callerName = caller.FindFirst(
@@ -207,8 +201,7 @@ public static class AuthEndpoints
             AthenaXIDbContext db,
             ClaimsPrincipal caller) =>
         {
-            var callerRole = caller.FindFirst(ClaimTypes.Role)?.Value;
-            if (callerRole != nameof(UserRole.AppOwner))
+            if (!caller.IsInRole(nameof(UserRole.AppOwner)))
                 return Results.Forbid();
 
             var users = await db.Users
@@ -234,8 +227,7 @@ public static class AuthEndpoints
             AthenaXIDbContext db,
             ClaimsPrincipal caller) =>
         {
-            var callerRole = caller.FindFirst(ClaimTypes.Role)?.Value;
-            if (callerRole != nameof(UserRole.AppOwner))
+            if (!caller.IsInRole(nameof(UserRole.AppOwner)))
                 return Results.Forbid();
 
             var user = await db.Users.FindAsync(id);
@@ -249,8 +241,5 @@ public static class AuthEndpoints
         }).AllowAnonymous();
     }
 
-    // ── Shared role extractor — checks both custom "role" claim and ClaimTypes.Role ──
-    private static string? GetRole(ClaimsPrincipal caller) =>
-        caller.FindFirst("role")?.Value
-        ?? caller.FindFirst(ClaimTypes.Role)?.Value;
+
 }

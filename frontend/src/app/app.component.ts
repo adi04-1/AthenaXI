@@ -12,8 +12,8 @@ import { NotificationService } from './core/services/notification.service';
   template: `
     <div class="app-shell">
 
-      <!-- Top Bar — hidden inside /admin -->
-      @if (auth.isLoggedIn() && !isAdmin()) {
+      <!-- Top Bar â€” hidden inside /admin -->
+      @if (auth.isLoggedIn()) {
         <header class="athena-topbar">
           <span class="athena-brand">AthenaXI</span>
           <div class="topbar-right">
@@ -29,24 +29,13 @@ import { NotificationService } from './core/services/notification.service';
         </header>
       }
 
-      <!-- Admin topbar shortcut -->
-      @if (auth.isLoggedIn() && auth.isAdmin() && !isAdminRoute()) {
-        <header class="athena-topbar">
-          <span class="athena-brand">AthenaXI</span>
-          <div class="topbar-right">
-            <span class="user-name">{{ auth.profile()?.username }}</span>
-            <span class="athena-badge athena-badge-gold">{{ auth.profile()?.role }}</span>
-            <a routerLink="/admin" class="topbar-admin-btn">Admin Panel</a>
-            <button class="topbar-logout-btn" (click)="auth.logout()">Logout</button>
-          </div>
-        </header>
-      }
+
 
       <main class="page-content">
         <router-outlet />
       </main>
 
-      <!-- Bottom Nav — ONLY on non-admin routes, only for logged in users -->
+      <!-- Bottom Nav â€” ONLY on non-admin routes, only for logged in users -->
       @if (auth.isLoggedIn() && !isAdminRoute()) {
         <nav class="athena-bottom-nav">
           <a routerLink="/leaderboard" routerLinkActive="active" class="athena-nav-item">
@@ -112,7 +101,7 @@ import { NotificationService } from './core/services/notification.service';
     }
     .topbar-logout-btn:hover { color: #fff; border-color: #555; }
 
-    /* Bottom nav — text labels instead of emojis */
+    /* Bottom nav â€” text labels instead of emojis */
     .app-shell { padding-bottom: 70px; }
     .nav-icon-text {
       font-family: var(--font-timer);

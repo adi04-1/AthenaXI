@@ -450,6 +450,7 @@ export class SeasonSetupComponent implements OnInit {
   }
 
   processUpload() {
+    debugger;
     const file = this.uploadFile();
     const seasonId = this.seasonId();
     if (!file || !seasonId) return;
@@ -463,7 +464,7 @@ export class SeasonSetupComponent implements OnInit {
         if (this.form.mode === 'DirectAllocation') {
           // Parse roster sheet
           const sheet = wb.Sheets[wb.SheetNames[0]];
-          const rows: any[] = utils.sheet_to_json(sheet);
+          const rows: any[] = utils.sheet_to_json(sheet, { range: 2 }); // skip header row
           this.playerSvc.uploadDirectAllocation(seasonId, rows).subscribe({
             next: r => { this.uploadResult.set(r); this.saving.set(false); this.step.set(6); },
             error: e => { this.error.set(e?.error?.error ?? 'Upload failed.'); this.saving.set(false); }
@@ -471,12 +472,15 @@ export class SeasonSetupComponent implements OnInit {
         } else {
           // Sheet 1: Player Pool
           const poolSheet = wb.Sheets['Player Pool'] ?? wb.Sheets[wb.SheetNames[0]];
-          const poolRows: any[] = utils.sheet_to_json(poolSheet);
+          const poolRows: any[] = utils.sheet_to_json(poolSheet, { range: 2 }); // skip header row
+          console.log('Parsed player pool rows:', poolRows);
 
           // Sheet 2: Auction Order
           const orderSheet = wb.Sheets['Auction Order'] ?? wb.Sheets[wb.SheetNames[1]];
-          const orderRows: any[] = utils.sheet_to_json(orderSheet);
-
+          const orderRows: any[] = utils.sheet_to_json(orderSheet, { range: 2 }); // skip header row
+          console.log('Parsed auction order rows:', orderRows);
+          console.log('Normalized player pool:', this.normalizePoolRows(poolRows));
+          console.log('Normalized auction order:', this.normalizeOrderRows(orderRows));
           // Upload players first, then auction order
           this.playerSvc.uploadPlayers(this.normalizePoolRows(poolRows)).subscribe({
             next: poolResult => {
@@ -489,11 +493,16 @@ export class SeasonSetupComponent implements OnInit {
                   // Handle retentions if present
                   if (this.form.mode === 'AuctionWithRetentions' && wb.SheetNames.length >= 3) {
                     const retSheet = wb.Sheets['Retentions'] ?? wb.Sheets[wb.SheetNames[2]];
-                    const retRows: any[] = utils.sheet_to_json(retSheet);
-                    this.teamSvc.uploadRetentions({ seasonId, retentions: this.normalizeRetentionRows(retRows) }).subscribe({
-                      next: () => this.step.set(6),
-                      error: () => this.step.set(6) // non-blocking
-                    });
+                    const retRows: any[] = utils.sheet_to_json(retSheet, { range: 2 }); // skip header row
+                    const retentions = this.normalizeRetentionRows(retRows);
+                    if (retentions.length > 0) {
+                      this.teamSvc.uploadRetentions({ seasonId, retentions }).subscribe({
+                        next: () => this.step.set(6),
+                        error: () => this.step.set(6)
+                      });
+                    } else {
+                      this.step.set(6);
+                    }
                   } else {
                     this.step.set(6);
                   }
@@ -554,6 +563,7 @@ export class SeasonSetupComponent implements OnInit {
 
   // Normalize Excel column names to API field names
   private normalizePoolRows(rows: any[]) {
+    debugger;
     return rows.filter(r => r['player_name ★'] || r['player_name']).map(r => ({
       playerName:   r['player_name ★'] ?? r['player_name'],
       iplTeam:      r['ipl_team ★']    ?? r['ipl_team'],

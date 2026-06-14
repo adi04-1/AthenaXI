@@ -30,4 +30,7 @@ export class NotificationService {
     return this.http.get<{ count: number }>(`${this.api}/notifications/unread-count`)
       .pipe(tap(r => this.unreadCount.set(r.count)));
   }
+  respondToAuctionInvite(inviteId: string, accept: boolean) {
+    return this.http.post<any>(`${this.api}/notifications/auction-invite/respond`, { inviteId, accept });
+  }
 }
