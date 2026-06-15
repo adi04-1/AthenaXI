@@ -12,7 +12,9 @@ export class AuctionService {
   getBids(slotId: string) { return this.http.get<any[]>(`${this.api}/auction/bids/${slotId}`); }
   getResults(sessionId: string) { return this.http.get<any[]>(`${this.api}/auction/results/${sessionId}`); }
   startAuction(sessionId: string) { return this.http.post<any>(`${this.api}/auction/${sessionId}/start`, {}); }
-  placeBid(body: any) { return this.http.post<any>(`${this.api}/auction/bid`, body); }
+  placeBid(body: { auctionSessionId: string; auctionPlayerSlotId: string; amountCr: number; isRtm?: boolean; teamUserId?: string }) {
+    return this.http.post<any>(`${this.api}/auction/bid`, body);
+  }
   markSold(body: any) { return this.http.post<any>(`${this.api}/auction/sold`, body); }
   markUnsold(body: any) { return this.http.post<any>(`${this.api}/auction/unsold`, body); }
   recallUnsold(slotId: string) { return this.http.post<any>(`${this.api}/auction/recall-unsold/${slotId}`, {}); }

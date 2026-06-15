@@ -1,3 +1,4 @@
+using AthenaXI.Core.Models;
 namespace AthenaXI.Core.DTOs;
 
 // ─── Requests ────────────────────────────────────────────────────────────────
@@ -6,7 +7,8 @@ public record PlaceBidRequest(
     Guid AuctionSessionId,
     Guid AuctionPlayerSlotId,
     decimal AmountCr,
-    bool IsRtm = false
+    bool IsRtm = false,
+    Guid? TeamUserId = null
 );
 
 public record MarkSoldRequest(
@@ -66,7 +68,8 @@ public record CurrentPlayerResponse(
     string SlotStatus,
     decimal CurrentBidCr,
     string? CurrentLeaderTeam,
-    string? CurrentLeaderColour
+    string? CurrentLeaderColour,
+    Guid? CurrentLeaderUserId 
 );
 
 public record BidResponse(
@@ -80,6 +83,7 @@ public record BidResponse(
 
 public record AuctionStandingsRow(
     Guid TeamId,
+    Guid UserId,
     string TeamName,
     string ShortCode,
     string ThemeColour,
@@ -99,7 +103,8 @@ public record AuctionResultResponse(
     decimal? FinalPriceCr,
     bool WasRtm,
     bool WentUnsold,
-    DateTime ResolvedAt
+    DateTime ResolvedAt,
+    Guid? SlotId = null
 );
 
 // ─── Invite DTOs ──────────────────────────────────────────────────────────────

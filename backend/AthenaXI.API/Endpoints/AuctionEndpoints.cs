@@ -84,7 +84,7 @@ public static class AuctionEndpoints
                     leaderColour = ft?.ThemeColour;
                 }
 
-                current = new CurrentPlayerResponse(
+                 current = new CurrentPlayerResponse(
                     active.Id, active.PlayerId,
                     active.Player.Name, active.Player.IPLTeam,
                     active.Player.Role.ToString(),
@@ -93,7 +93,8 @@ public static class AuctionEndpoints
                     active.AuctionSet, active.SetDisplayName,
                     active.RtmTeam, active.Status.ToString(),
                     topBid?.AmountCr ?? active.BasePriceCr,
-                    leaderTeam, leaderColour);
+                    leaderTeam, leaderColour,
+                    topBid?.BiddingUserId);
             }
 
             var slots = session.PlayerSlots;
@@ -127,7 +128,7 @@ public static class AuctionEndpoints
             {
                 userTeams.TryGetValue(t.UserId, out var ut);
                 return new AuctionStandingsRow(
-                    t.Id, t.Name, t.ShortCode, t.ThemeColour,
+                    t.Id, t.UserId, t.Name, t.ShortCode, t.ThemeColour,
                     ut?.BudgetRemainingCr ?? 0,
                     ut?.Players.Count ?? 0,
                     ut?.RtmSlotsRemaining ?? 0);
@@ -137,19 +138,24 @@ public static class AuctionEndpoints
         }).AllowAnonymous();
 
         // ── POST /api/auction/bid ─────────────────────────────────────────────
-        group.MapPost("/bid", async (
+        _ = group.MapPost("/bid", async (
             PlaceBidRequest req,
             AthenaXIDbContext db,
             ClaimsPrincipal caller) =>
         {
-            var userId = Guid.Parse(caller.FindFirst("userId")!.Value);
+            var callerUserId = Guid.Parse(caller.FindFirst("userId")!.Value);
+            // Admin can bid on behalf of a team by passing teamUserId
+            var isAdmin = caller.IsInRole(nameof(UserRole.AppOwner)) || caller.IsInRole(nameof(UserRole.LeagueAdmin));
+            var userId = (isAdmin && req.TeamUserId.HasValue)
+                ? req.TeamUserId.Value
+                : callerUserId;
 
             var session = await db.AuctionSessions
                 .Include(a => a.Season).ThenInclude(s => s.Config)
                 .FirstOrDefaultAsync(a => a.Id == req.AuctionSessionId);
 
             if (session is null || session.Status != AuctionStatus.InProgress)
-                return Results.Ok(new { id = (Guid?)null, status = "NoSession", message = "No active auction session." });
+                return Results.BadRequest(new { error = "No active auction session." });
 
             var slot = await db.AuctionPlayerSlots
                 .FirstOrDefaultAsync(s => s.Id == req.AuctionPlayerSlotId &&
@@ -166,14 +172,17 @@ public static class AuctionEndpoints
 
             var config = session.Season.Config!;
 
-            // Budget guard — must keep enough for remaining required slots
-            var playersNeeded = config.MinSquadSize - ut.Players.Count - 1;
-            var minRequired   = Math.Max(0, playersNeeded) * slot.BidIncrementCr;
-            if (req.AmountCr > ut.BudgetRemainingCr - minRequired)
-                return Results.BadRequest(new
-                {
-                    error = $"Insufficient budget. You need ₹{minRequired}Cr for remaining squad slots."
-                });
+            // Budget guard — skip for admin override bids
+            if (!isAdmin || !req.TeamUserId.HasValue)
+            {
+                var playersNeeded = config.MinSquadSize - ut.Players.Count - 1;
+                var minRequired = Math.Max(0, playersNeeded) * slot.BidIncrementCr;
+                if (req.AmountCr > ut.BudgetRemainingCr - minRequired)
+                    return Results.BadRequest(new
+                    {
+                        error = $"Insufficient budget. You need Rs.{minRequired}Cr for remaining squad slots."
+                    });
+            }
 
             // Minimum increment check
             var topBid = await db.AuctionBids
@@ -205,12 +214,12 @@ public static class AuctionEndpoints
 
             var bid = new AuctionBid
             {
-                AuctionSessionId    = req.AuctionSessionId,
+                AuctionSessionId = req.AuctionSessionId,
                 AuctionPlayerSlotId = req.AuctionPlayerSlotId,
-                BiddingUserId       = userId,
-                AmountCr            = req.AmountCr,
-                IsRtm               = req.IsRtm,
-                PlacedAt            = DateTime.UtcNow,
+                BiddingUserId = userId,
+                AmountCr = req.AmountCr,
+                IsRtm = req.IsRtm,
+                PlacedAt = DateTime.UtcNow,
             };
             db.AuctionBids.Add(bid);
             await db.SaveChangesAsync();
@@ -244,10 +253,10 @@ public static class AuctionEndpoints
                 .FirstOrDefaultAsync(a => a.Id == req.AuctionSessionId);
             if (session is null) return Results.NotFound();
 
-            var winnerTeam = await db.FantasyTeams
+             var winnerTeam = await db.FantasyTeams
                 .FirstOrDefaultAsync(f => f.UserId == req.WinningUserId &&
                                           f.SeasonId == session.SeasonId);
-            if (winnerTeam is null) return Results.NotFound(new { error = "Winning team not found." });
+            if (winnerTeam is null) return Results.NotFound(new { error = $"Winning team not found for userId {req.WinningUserId}." });
 
             var ut = await db.UserTeams
                 .Include(u => u.Players)
@@ -522,13 +531,19 @@ public static class AuctionEndpoints
                 .Where(f => userIds.Contains(f.UserId) && f.SeasonId == session.SeasonId)
                 .ToDictionaryAsync(f => f.UserId);
 
+            // Build playerId -> slotId map for recall
+            var slotMap = await db.AuctionPlayerSlots
+                .Where(s => s.AuctionSessionId == sessionId)
+                .ToDictionaryAsync(s => s.PlayerId, s => s.Id);
+
             var response = results.Select(r =>
             {
                 teams.TryGetValue(r.WinningUserId ?? Guid.Empty, out var ft);
+                slotMap.TryGetValue(r.PlayerId, out var slotId);
                 return new AuctionResultResponse(
                     r.PlayerId, r.Player.Name, r.Player.IPLTeam, r.Player.Role.ToString(),
                     ft?.Id, ft?.Name, ft?.ShortCode,
-                    r.FinalPriceCr, r.WasRtm, r.WentUnsold, r.ResolvedAt);
+                    r.FinalPriceCr, r.WasRtm, r.WentUnsold, r.ResolvedAt, slotId);
             });
 
             return Results.Ok(response);

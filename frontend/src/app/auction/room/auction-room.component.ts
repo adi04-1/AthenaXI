@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -13,252 +13,269 @@ import { SeasonService } from '../../core/services/season.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-    <div class="auction-shell">
+    <div class="room">
 
-      <!-- Header bar -->
-      <div class="auction-header">
-        <div class="header-left">
-          <span class="auction-brand">AthenaXI</span>
-          <div class="status-chip" [class.live]="isLive()" [class.waiting]="!isLive()">
-            {{ isLive() ? 'LIVE' : session()?.status ?? 'Loading' }}
+      <!-- ── TOP BAR ── -->
+      <header class="room-header">
+        <div class="rh-left">
+          <span class="rh-brand">AthenaXI</span>
+          <div class="live-chip" [class.live]="isLive()" [class.idle]="!isLive()">
+            {{ isLive() ? 'LIVE' : (session()?.status ?? 'LOADING') }}
           </div>
         </div>
-        <div class="auction-progress" *ngIf="session()">
-          <span class="prog-text">Sold: <strong>{{ session()?.soldCount ?? 0 }}</strong></span>
-          <span class="prog-text">Unsold: <strong>{{ session()?.unsoldCount ?? 0 }}</strong></span>
-          <span class="prog-text">Remaining: <strong>{{ session()?.pendingCount ?? 0 }}</strong></span>
+        <div class="rh-stats">
+          <div class="rh-stat"><span class="rs-val">{{ session()?.soldCount ?? 0 }}</span><span class="rs-lbl">Sold</span></div>
+          <div class="rh-stat"><span class="rs-val">{{ session()?.unsoldCount ?? 0 }}</span><span class="rs-lbl">Unsold</span></div>
+          <div class="rh-stat"><span class="rs-val">{{ session()?.pendingCount ?? 0 }}</span><span class="rs-lbl">Remaining</span></div>
         </div>
-        <div class="header-right">
-          @if (isAdmin()) {
-            <a routerLink="/admin/auction" class="athena-btn athena-btn-secondary" style="font-size:12px;padding:6px 12px;text-decoration:none">
-              Lobby
-            </a>
-          }
+        <div class="rh-right">
+          @if (isAdmin()) { <a routerLink="/admin/auction" class="rh-link">← Lobby</a> }
         </div>
-      </div>
+      </header>
 
-      <!-- No session state -->
-      @if (!session() || session()?.status === 'NoSession') {
-        <div class="no-session-state">
-          <div class="no-session-card athena-card">
-            <div class="ns-icon">AUC</div>
-            <h2 class="ns-title">No Active Auction</h2>
-            <p class="ns-sub">Upload player pool and auction order, then start the auction from the Admin Lobby.</p>
-            @if (isAdmin()) {
-              <a routerLink="/admin/auction" class="athena-btn athena-btn-primary" style="text-decoration:none;display:inline-block;margin-top:16px">
-                Go to Auction Lobby
-              </a>
+      <!-- ── IDLE STATES ── -->
+      @if (!session() || session()?.status === 'NoSession' || session()?.status === 'NotStarted') {
+        <div class="idle-wrap">
+          <div class="idle-card">
+            <div class="idle-badge">{{ session()?.status === 'NotStarted' ? 'READY' : 'STANDBY' }}</div>
+            @if (session()?.status === 'NotStarted') {
+              <h2>{{ session()?.totalPlayers ?? 0 }} Players Loaded</h2>
+              <p>All teams notified. Start when everyone is ready.</p>
+              @if (isAdmin()) {
+                <button class="start-btn" (click)="startAuction()" [disabled]="saving()">
+                  {{ saving() ? 'Starting...' : 'Start Auction' }}
+                </button>
+              } @else {
+                <p class="idle-wait">Waiting for the auctioneer to begin...</p>
+              }
             } @else {
-              <p class="ns-wait">Waiting for admin to start the auction...</p>
+              <h2>No Active Auction</h2>
+              <p>Upload players and set the auction order from Admin, then return here.</p>
+              @if (isAdmin()) {
+                <a routerLink="/admin/auction" class="start-btn" style="text-decoration:none;display:inline-block">Go to Lobby</a>
+              }
             }
           </div>
         </div>
       }
 
-      <!-- Not started state -->
-      @if (session()?.status === 'NotStarted') {
-        <div class="no-session-state">
-          <div class="no-session-card athena-card">
-            <div class="ns-icon">READY</div>
-            <h2 class="ns-title">Auction Ready to Start</h2>
-            <p class="ns-sub">{{ session()?.totalPlayers ?? 0 }} players loaded. Waiting for admin to begin.</p>
-            @if (isAdmin()) {
-              <button class="athena-btn athena-btn-primary" style="margin-top:16px" (click)="startAuction()" [disabled]="saving()">
-                {{ saving() ? 'Starting...' : 'Start Auction' }}
-              </button>
-            }
+      <!-- ── COMPLETED ── -->
+      @if (session()?.status === 'Completed') {
+        <div class="idle-wrap">
+          <div class="idle-card">
+            <div class="idle-badge done">COMPLETE</div>
+            <h2>Auction Finished</h2>
+            <p>All squads are locked. Teams can now assign Captain, VC and Impact Player.</p>
+            <a routerLink="/leaderboard" class="start-btn" style="text-decoration:none;display:inline-block">View Leaderboard</a>
           </div>
         </div>
       }
 
-      <!-- Active auction -->
+      <!-- ── LIVE AUCTION ── -->
       @if (isLive()) {
-        <div class="auction-body">
+        <div class="auction-grid">
 
-          <!-- Left: Current Player -->
-          <div class="player-panel">
-            @if (currentPlayer()) {
-              <div class="player-card athena-card">
+          <!-- ════ LEFT — PLAYER + BIDDING ════ -->
+          <div class="left-col">
 
-                <!-- Set label -->
-                <div class="set-label">{{ currentPlayer()!.setDisplayName ?? currentPlayer()!.auctionSet }}</div>
+            <!-- Player card -->
+            <div class="player-card">
+              <div class="pc-set">{{ cp()?.setDisplayName ?? cp()?.auctionSet }}</div>
 
-                <!-- Player name -->
-                <h1 class="player-name">{{ currentPlayer()!.playerName }}</h1>
-
-                <!-- Tags -->
-                <div class="player-tags">
-                  <span class="tag ipl-tag">{{ currentPlayer()!.iplTeam }}</span>
-                  <span class="tag role-tag" [ngClass]="'role-' + currentPlayer()!.role.toLowerCase()">
-                    {{ currentPlayer()!.role }}
-                  </span>
-                  @if (currentPlayer()!.isOverseas) {
-                    <span class="tag overseas-tag">Overseas</span>
-                  }
-                  @if (currentPlayer()!.isUncapped) {
-                    <span class="tag uncapped-tag">Uncapped</span>
-                  }
-                  @if (currentPlayer()!.rtmTeam) {
-                    <span class="tag rtm-tag">RTM: {{ currentPlayer()!.rtmTeam }}</span>
-                  }
-                </div>
-
-                <!-- Base price -->
-                <div class="base-price">Base Price: <strong>Rs. {{ currentPlayer()!.basePriceCr }}Cr</strong></div>
-
-                <!-- Current bid display -->
-                <div class="bid-display">
-                  <div class="bid-amount">Rs. {{ currentBid() }}Cr</div>
-                  @if (leadingTeam()) {
-                    <div class="bid-leader" [style.color]="leadingTeamColour()">
-                      {{ leadingTeam() }}
-                    </div>
-                  } @else {
-                    <div class="bid-leader muted">No bids yet — opening at base price</div>
-                  }
-                  <div class="bid-increment">Min increment: Rs. {{ currentPlayer()!.bidIncrementCr }}Cr</div>
-                </div>
-
-                <!-- Timer -->
-                @if (timerActive()) {
-                  <div class="timer-display" [class.urgent]="timerSeconds() <= 5">
-                    <div class="timer-num">{{ timerSeconds() }}</div>
-                    <div class="timer-label">seconds</div>
-                  </div>
-                }
-
-                <!-- Team owner bid section -->
-                @if (!isAdmin() && myTeam()) {
-                  <div class="team-bid-section">
-                    <div class="my-budget-bar">
-                      <span class="budget-label">My Budget</span>
-                      <span class="budget-val" [class.low]="myTeam()!.budgetRemainingCr < 10">
-                        Rs. {{ myTeam()!.budgetRemainingCr }}Cr
-                      </span>
-                    </div>
-                    <div class="bid-input-row">
-                      <input class="athena-input bid-input" type="number"
-                        [(ngModel)]="bidAmount"
-                        [placeholder]="'Min ' + minBid()"
-                        [min]="minBid()" step="0.25" />
-                      <button class="athena-btn athena-btn-primary bid-btn"
-                        (click)="placeBid(false)"
-                        [disabled]="saving() || bidAmount < minBid()">
-                        Bid
-                      </button>
-                    </div>
-                    @if (currentPlayer()!.rtmTeam === myTeam()!.shortCode) {
-                      <button class="athena-btn rtm-btn"
-                        (click)="placeBid(true)"
-                        [disabled]="saving() || myTeam()!.rtmSlotsRemaining < 1">
-                        Use RTM ({{ myTeam()!.rtmSlotsRemaining }} left)
-                      </button>
-                    }
-                  </div>
-                }
-
-                <!-- Admin controls -->
-                @if (isAdmin()) {
-                  <div class="admin-controls">
-                    <div class="bid-input-row">
-                      <select class="athena-input" [(ngModel)]="selectedTeamId" style="flex:1">
-                        <option value="">Select bidding team...</option>
-                        @for (t of standings(); track t.teamId) {
-                          <option [value]="t.userId">{{ t.teamName }} (Rs. {{ t.budgetRemainingCr }}Cr)</option>
-                        }
-                      </select>
-                      <input class="athena-input bid-input" type="number"
-                        [(ngModel)]="bidAmount" placeholder="Amount" style="width:100px" />
-                      <button class="athena-btn athena-btn-primary"
-                        (click)="adminBid()"
-                        [disabled]="!selectedTeamId || saving()">
-                        Bid
-                      </button>
-                    </div>
-
-                    <div class="admin-action-row">
-                      <!-- Sold -->
-                      <button class="athena-btn sold-btn"
-                        (click)="markSold()"
-                        [disabled]="!leadingTeamUserId() || saving()">
-                        SOLD to {{ leadingTeam() ?? '?' }}
-                      </button>
-                      <!-- Unsold -->
-                      <button class="athena-btn unsold-btn"
-                        (click)="markUnsold()"
-                        [disabled]="saving()">
-                        UNSOLD
-                      </button>
-                      <!-- Timer -->
-                      <button class="athena-btn timer-btn"
-                        (click)="toggleTimer()">
-                        {{ timerActive() ? 'Stop Timer' : 'Start Timer' }}
-                      </button>
-                    </div>
-                  </div>
-                }
-              </div>
-
-              <!-- Recent bids -->
-              @if (recentBids().length > 0) {
-                <div class="recent-bids athena-card">
-                  <div class="section-label">Bid History</div>
-                  @for (bid of recentBids(); track bid.bidId) {
-                    <div class="bid-row" [class.top]="bid === recentBids()[0]">
-                      <span class="bid-team" [style.color]="bid.biddingTeamColour">{{ bid.biddingTeam }}</span>
-                      <span class="bid-val">Rs. {{ bid.amountCr }}Cr</span>
-                      @if (bid.isRtm) { <span class="rtm-pill">RTM</span> }
-                    </div>
-                  }
+              @if (cp()?.rtmTeam) {
+                <div class="rtm-notice">
+                  <span class="rtm-icon">RTM</span>
+                  <span><strong>{{ cp()!.rtmTeam }}</strong> holds Right to Match on this player</span>
                 </div>
               }
 
-            } @else {
-              <div class="waiting-player athena-card">
-                <p>Waiting for next player...</p>
-                @if (isAdmin()) {
-                  <button class="athena-btn athena-btn-primary" style="margin-top:12px"
-                    (click)="completeAuction()" [disabled]="saving()">
-                    Complete Auction
-                  </button>
-                }
-              </div>
-            }
-          </div>
+              <div class="pc-name">{{ cp()?.playerName }}</div>
 
-          <!-- Right: Team Standings -->
-          <div class="standings-panel">
-            <div class="section-label" style="padding:16px 16px 8px">Team Budgets</div>
-            <div class="standings-list">
-              @for (t of standings(); track t.teamId) {
-                <div class="standing-row" [style.border-left-color]="t.themeColour">
-                  <div class="standing-team">
-                    <span class="s-code" [style.color]="t.themeColour">{{ t.shortCode }}</span>
-                    <span class="s-name">{{ t.teamName }}</span>
-                  </div>
-                  <div class="standing-stats">
-                    <span class="s-budget" [class.low]="t.budgetRemainingCr < 10">
-                      Rs. {{ t.budgetRemainingCr }}Cr
-                    </span>
-                    <span class="s-players">{{ t.playersAcquired }} players</span>
-                    @if (t.rtmSlotsRemaining > 0) {
-                      <span class="rtm-pill small">RTM: {{ t.rtmSlotsRemaining }}</span>
-                    }
-                  </div>
+              <div class="pc-tags">
+                <span class="ptag ipl">{{ cp()?.iplTeam }}</span>
+                <span class="ptag" [ngClass]="'r-' + (cp()?.role?.toLowerCase() ?? '')">{{ cp()?.role }}</span>
+                @if (cp()?.isOverseas) { <span class="ptag os">Overseas</span> }
+                @if (cp()?.isUncapped) { <span class="ptag unc">Uncapped</span> }
+              </div>
+
+              <div class="pc-base">Base Price: <strong>Rs. {{ cp()?.basePriceCr }}Cr</strong>
+                <span class="pc-incr"> · Increment: Rs. {{ cp()?.bidIncrementCr }}Cr</span>
+              </div>
+
+              <!-- Bid ticker -->
+              <div class="bid-ticker" [class.active]="hasBid()">
+                <div class="bt-amount">Rs. {{ currentBid() }}Cr</div>
+                <div class="bt-leader" [style.color]="leaderColour()">
+                  {{ hasBid() ? (leaderName() + ' leads') : 'No bids yet — opens at base price' }}
+                </div>
+              </div>
+
+              <!-- Timer -->
+              @if (timerOn()) {
+                <div class="timer-bar" [class.urgent]="timerSecs() <= 5">
+                  <div class="tb-track" [style.width]="(timerSecs()/10*100) + '%'"></div>
+                  <div class="tb-num">{{ timerSecs() }}s</div>
                 </div>
               }
             </div>
 
-            <!-- Unsold pool -->
-            @if (unsoldSlots().length > 0 && isAdmin()) {
-              <div class="unsold-pool">
-                <div class="section-label" style="padding:12px 16px 8px">Unsold Pool</div>
-                @for (slot of unsoldSlots(); track slot.slotId) {
-                  <div class="unsold-row">
-                    <span class="unsold-name">{{ slot.playerName }}</span>
-                    <button class="recall-btn" (click)="recallUnsold(slot.slotId)" [disabled]="saving()">
-                      Recall
+            <!-- ── TEAM OWNER bidding ── -->
+            @if (!isAdmin() && myTeam()) {
+              <div class="bid-panel">
+                <div class="bp-budget">
+                  <span class="bp-lbl">My Budget</span>
+                  <span class="bp-val" [class.low]="myTeam()!.budgetRemainingCr < 10">
+                    Rs. {{ myTeam()!.budgetRemainingCr }}Cr
+                  </span>
+                </div>
+                <div class="bp-quick">
+                  <button class="qbtn" (click)="setAmt(minBid())">Rs. {{ minBid() }}</button>
+                  <button class="qbtn" (click)="setAmt(minBid() + cp()!.bidIncrementCr)">Rs. {{ minBid() + cp()!.bidIncrementCr }}</button>
+                  <button class="qbtn" (click)="setAmt(minBid() + cp()!.bidIncrementCr * 2)">Rs. {{ minBid() + cp()!.bidIncrementCr * 2 }}</button>
+                </div>
+                <div class="bp-row">
+                  <input class="athena-input" type="number" [(ngModel)]="bidAmt" [min]="minBid()" step="0.25" placeholder="Enter amount" />
+                  <button class="bid-btn" (click)="teamBid()" [disabled]="saving() || bidAmt < minBid()">
+                    {{ saving() ? '...' : 'BID' }}
+                  </button>
+                </div>
+                @if (cp()?.rtmTeam === myTeam()!.shortCode && myTeam()!.rtmSlotsRemaining > 0) {
+                  <button class="rtm-btn" (click)="teamBid(true)" [disabled]="saving()">
+                    Exercise RTM — Match Rs. {{ currentBid() }}Cr ({{ myTeam()!.rtmSlotsRemaining }} slot left)
+                  </button>
+                }
+                @if (bidErr()) { <div class="inline-err">{{ bidErr() }}</div> }
+              </div>
+            }
+
+            <!-- ── ADMIN auctioneer panel ── -->
+            @if (isAdmin()) {
+              <div class="admin-panel">
+                <div class="ap-title">AUCTIONEER CONTROLS</div>
+
+                <!-- Section 1: Raise bid for a team -->
+                <div class="ap-section">
+                  <div class="ap-section-lbl">Raise bid on behalf of team</div>
+                  <div class="ap-row">
+                    <select class="athena-input ap-select" [(ngModel)]="raiseBidUserId">
+                      <option [ngValue]="">Select team...</option>
+                      @for (t of standings(); track t.userId) {
+                        <option [ngValue]="t.userId">{{ t.shortCode }} — {{ t.teamName }} (Rs. {{ t.budgetRemainingCr }}Cr)</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="ap-row">
+                    <button class="qbtn" (click)="setAmt(minBid())">Rs. {{ minBid() }}</button>
+                    <button class="qbtn" (click)="setAmt(minBid() + cp()!.bidIncrementCr)">Rs. {{ minBid() + cp()!.bidIncrementCr }}</button>
+                    <input class="athena-input ap-inp" type="number" [(ngModel)]="bidAmt" [min]="minBid()" step="0.25" placeholder="Amount" />
+                    <button class="raise-btn" (click)="adminRaise()" [disabled]="!raiseBidUserId || saving()">RAISE</button>
+                  </div>
+                  @if (bidErr()) { <div class="inline-err">{{ bidErr() }}</div> }
+                </div>
+
+                <!-- Section 2: Sold -->
+                <div class="ap-section sold-zone" [class.ready]="hasBid()">
+                  <div class="ap-section-lbl">
+                    Mark as SOLD
+                    @if (!hasBid()) { <span class="ap-hint">— place at least one bid first</span> }
+                  </div>
+
+                  @if (hasBid()) {
+                    <div class="current-leader-row">
+                      <span class="cl-label">Current leader:</span>
+                      <span class="cl-team" [style.color]="leaderColour()">{{ leaderName() }}</span>
+                      <span class="cl-price"> => Rs. {{ currentBid() }}Cr</span>
+                    </div>
+                  }
+
+                  <div class="ap-row">
+                    <select class="athena-input ap-select" [(ngModel)]="soldUserId">
+                      <option value="">
+                        {{ hasBid() ? 'Confirm: ' + leaderName() + ' (or override)' : 'Select team...' }}
+                      </option>
+                      @for (t of standings(); track t.teamId) {
+                        <option [value]="t.userId">{{ t.shortCode }} — {{ t.teamName }}</option>
+                      }
+                    </select>
+                    <input class="athena-input ap-inp-sm" type="number" [(ngModel)]="soldAmt"
+                      [placeholder]="'Rs.' + currentBid()" step="0.25" />
+                    <button class="sold-btn" (click)="markSold()"
+                      [disabled]="!hasBid() || saving()">
+                      SOLD
                     </button>
+                  </div>
+                  @if (!hasBid()) {
+                    <div class="ap-hint-row">Place at least one bid before marking sold.</div>
+                  }
+                </div>
+
+                <!-- Section 3: Timer + Unsold + Complete -->
+                <div class="ap-section">
+                  <div class="ap-bottom-row">
+                    <button class="timer-btn" [class.on]="timerOn()" (click)="toggleTimer()">
+                      {{ timerOn() ? 'Stop Timer (' + timerSecs() + 's)' : 'Start 10s Timer' }}
+                    </button>
+                    <button class="unsold-btn" (click)="markUnsold()" [disabled]="saving()">UNSOLD</button>
+                  </div>
+                  @if ((session()?.pendingCount ?? 1) === 0) {
+                    <button class="complete-btn" (click)="completeAuction()" [disabled]="saving()">
+                      Complete Auction & Lock All Squads
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Bid history -->
+            @if (recentBids().length > 0) {
+              <div class="bid-history">
+                <div class="bh-title">BID HISTORY</div>
+                @for (b of recentBids(); track b.bidId; let i = $index) {
+                  <div class="bh-row" [class.bh-top]="i === 0">
+                    <div class="bh-team" [style.color]="b.biddingTeamColour">{{ b.biddingTeam }}</div>
+                    <div class="bh-meta">
+                      @if (b.isRtm) { <span class="rtm-pill">RTM</span> }
+                      <span class="bh-time">{{ b.placedAt | date:'HH:mm:ss' }}</span>
+                    </div>
+                    <div class="bh-amt">Rs. {{ b.amountCr }}Cr</div>
+                  </div>
+                }
+              </div>
+            }
+
+          </div>
+
+          <!-- ════ RIGHT — STANDINGS + UNSOLD ════ -->
+          <div class="right-col">
+            <div class="rc-title">TEAM BUDGETS</div>
+            @for (t of standings(); track t.teamId) {
+              <div class="team-row" [style.border-left-color]="t.themeColour"
+                [class.leading]="t.userId === leadingUserId()">
+                <div class="tr-left">
+                  <span class="tr-code" [style.color]="t.themeColour">{{ t.shortCode }}</span>
+                  <div class="tr-info">
+                    <span class="tr-name">{{ t.teamName }}</span>
+                    <span class="tr-players">{{ t.playersAcquired }} players</span>
+                  </div>
+                </div>
+                <div class="tr-right">
+                  <span class="tr-budget" [class.low]="t.budgetRemainingCr < 10">Rs. {{ t.budgetRemainingCr }}Cr</span>
+                  @if (t.rtmSlotsRemaining > 0) { <span class="rtm-pill sm">RTM:{{ t.rtmSlotsRemaining }}</span> }
+                </div>
+              </div>
+            }
+
+            @if (unsoldList().length > 0) {
+              <div class="unsold-section">
+                <div class="rc-title" style="margin-top:16px">UNSOLD POOL</div>
+                @for (u of unsoldList(); track u.slotId) {
+                  <div class="unsold-row">
+                    <span class="un-name">{{ u.playerName }}</span>
+                    @if (isAdmin()) {
+                      <button class="recall-btn" (click)="recall(u.slotId)" [disabled]="saving() || !!cp()">
+                        {{ cp() ? 'In Progress' : 'Recall' }}
+                      </button>
+                    }
                   </div>
                 }
               </div>
@@ -268,318 +285,219 @@ import { SeasonService } from '../../core/services/season.service';
         </div>
       }
 
-      <!-- Completed state -->
-      @if (session()?.status === 'Completed') {
-        <div class="no-session-state">
-          <div class="no-session-card athena-card">
-            <div class="ns-icon">DONE</div>
-            <h2 class="ns-title">Auction Complete</h2>
-            <p class="ns-sub">All squads have been finalised. Teams can now assign Captain, VC and Impact Player.</p>
-            <a routerLink="/leaderboard" class="athena-btn athena-btn-primary" style="text-decoration:none;display:inline-block;margin-top:16px">
-              View Leaderboard
-            </a>
-          </div>
-        </div>
-      }
-
-      <!-- Error / Success toast -->
-      @if (toast()) {
-        <div class="toast" [class.error]="toastType() === 'error'" [class.success]="toastType() === 'success'">
-          {{ toast() }}
-        </div>
+      <!-- Toast -->
+      @if (toastMsg()) {
+        <div class="toast" [class.toast-err]="toastIsErr()">{{ toastMsg() }}</div>
       }
 
     </div>
   `,
   styles: [`
-    /* Shell */
-    .auction-shell {
-      min-height: 100vh;
-      background: var(--navy-deep);
-      display: flex; flex-direction: column;
-      font-family: var(--font-body);
-    }
+    /* ── Shell ── */
+    .room { min-height:100vh; background:var(--navy-deep); display:flex; flex-direction:column; font-family:var(--font-body); color:#fff; }
 
-    /* Header */
-    .auction-header {
-      background: rgba(10,31,47,0.97);
-      border-bottom: 1px solid rgba(212,175,55,0.2);
-      padding: 10px 20px;
-      display: flex; align-items: center;
-      justify-content: space-between; gap: 12px;
-      flex-wrap: wrap; position: sticky; top: 0; z-index: 50;
-    }
-    .header-left { display: flex; align-items: center; gap: 12px; }
-    .auction-brand {
-      font-family: var(--font-heading); font-size: 18px;
-      font-weight: 900; letter-spacing: 0.15em;
-      background: linear-gradient(180deg, #fff 0%, var(--gold) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .status-chip {
-      font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
-      padding: 3px 10px; border-radius: 20px;
-    }
-    .status-chip.live {
-      background: rgba(255,59,48,0.15); color: var(--red-live);
-      border: 1px solid rgba(255,59,48,0.3);
-      animation: pulse-chip 1.5s ease infinite;
-    }
-    .status-chip.waiting { background: rgba(212,175,55,0.1); color: var(--gold); border: 1px solid rgba(212,175,55,0.2); }
-    @keyframes pulse-chip { 0%,100%{opacity:1} 50%{opacity:0.6} }
-    .auction-progress { display: flex; gap: 16px; flex-wrap: wrap; }
-    .prog-text { font-size: 12px; color: #888; }
-    .prog-text strong { color: #fff; }
+    /* ── Header ── */
+    .room-header { background:rgba(10,31,47,0.97); border-bottom:1px solid rgba(212,175,55,0.18); padding:10px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; position:sticky; top:0; z-index:50; backdrop-filter:blur(12px); }
+    .rh-brand { font-family:var(--font-heading); font-size:18px; font-weight:900; letter-spacing:0.15em; background:linear-gradient(180deg,#fff 0%,var(--gold) 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .rh-left { display:flex; align-items:center; gap:12px; }
+    .live-chip { font-size:10px; font-weight:900; letter-spacing:0.12em; padding:3px 10px; border-radius:20px; text-transform:uppercase; }
+    .live-chip.live { background:rgba(255,59,48,0.15); color:var(--red-live); border:1px solid rgba(255,59,48,0.3); animation:pulse-dot 1.5s ease infinite; }
+    .live-chip.idle { background:rgba(212,175,55,0.1); color:var(--gold); border:1px solid rgba(212,175,55,0.2); }
+    .rh-stats { display:flex; gap:20px; }
+    .rh-stat { display:flex; flex-direction:column; align-items:center; gap:1px; }
+    .rs-val { font-family:var(--font-timer); font-size:18px; font-weight:900; color:#fff; line-height:1; }
+    .rs-lbl { font-size:9px; color:#666; text-transform:uppercase; letter-spacing:0.08em; }
+    .rh-link { font-size:12px; font-weight:700; color:var(--gold-dark); text-decoration:none; border:1px solid rgba(212,175,55,0.2); border-radius:6px; padding:5px 12px; }
 
-    /* No session */
-    .no-session-state {
-      flex: 1; display: flex;
-      align-items: center; justify-content: center; padding: 40px 20px;
-    }
-    .no-session-card { text-align: center; padding: 48px 32px; max-width: 440px; }
-    .ns-icon {
-      font-family: var(--font-timer); font-size: 13px; font-weight: 900;
-      color: var(--gold); letter-spacing: 0.15em;
-      background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.2);
-      border-radius: var(--radius-xl); padding: 6px 16px;
-      display: inline-block; margin-bottom: 20px;
-    }
-    .ns-title { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 10px; }
-    .ns-sub { color: #888; font-size: 14px; line-height: 1.5; }
-    .ns-wait { color: #555; font-size: 13px; margin-top: 16px; }
+    /* ── Idle / Completed ── */
+    .idle-wrap { flex:1; display:flex; align-items:center; justify-content:center; padding:40px 20px; }
+    .idle-card { text-align:center; max-width:420px; background:linear-gradient(135deg,rgba(30,58,95,0.7),rgba(10,31,47,0.9)); border:1px solid rgba(212,175,55,0.2); border-radius:16px; padding:48px 32px; }
+    .idle-badge { font-family:var(--font-timer); font-size:11px; font-weight:900; letter-spacing:0.18em; color:var(--gold); background:rgba(212,175,55,0.1); border:1px solid rgba(212,175,55,0.25); border-radius:20px; padding:5px 16px; display:inline-block; margin-bottom:20px; }
+    .idle-badge.done { color:var(--green-cricket); background:rgba(0,200,83,0.1); border-color:rgba(0,200,83,0.25); }
+    .idle-card h2 { font-size:22px; font-weight:800; margin:0 0 10px; }
+    .idle-card p { color:#888; font-size:14px; margin:0 0 20px; line-height:1.5; }
+    .idle-wait { color:#555 !important; font-size:13px !important; margin-top:16px !important; }
+    .start-btn { background:linear-gradient(135deg,var(--gold-dark),var(--gold)); color:var(--navy-deep); border:none; border-radius:10px; padding:13px 32px; font-size:15px; font-weight:800; cursor:pointer; letter-spacing:0.04em; }
+    .start-btn:disabled { opacity:0.5; cursor:not-allowed; }
 
-    /* Auction body — 2-col on desktop */
-    .auction-body {
-      flex: 1; display: grid;
-      grid-template-columns: 1fr 300px;
-      gap: 0; min-height: 0;
-    }
-    @media (max-width: 900px) {
-      .auction-body { grid-template-columns: 1fr; }
-    }
+    /* ── Live grid ── */
+    .auction-grid { flex:1; display:grid; grid-template-columns:1fr 270px; min-height:0; }
+    @media (max-width:860px) { .auction-grid { grid-template-columns:1fr; } }
+    .left-col { padding:16px; display:flex; flex-direction:column; gap:12px; overflow-y:auto; }
+    .right-col { background:rgba(8,24,40,0.8); border-left:1px solid rgba(212,175,55,0.1); padding:14px 12px; overflow-y:auto; }
 
-    /* Player panel */
-    .player-panel {
-      padding: 20px; display: flex;
-      flex-direction: column; gap: 12px;
-    }
-    .player-card { padding: 24px; }
-    .set-label {
-      font-size: 11px; font-weight: 700; letter-spacing: 0.15em;
-      text-transform: uppercase; color: var(--gold-dark);
-      margin-bottom: 12px;
-    }
-    .player-name {
-      font-family: var(--font-heading); font-size: 32px;
-      font-weight: 900; letter-spacing: 0.04em;
-      background: linear-gradient(180deg, #fff 0%, var(--gold) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      margin-bottom: 12px; line-height: 1.1;
-    }
-    @media (max-width: 600px) { .player-name { font-size: 24px; } }
-    .player-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-    .tag {
-      font-size: 11px; font-weight: 700;
-      padding: 3px 10px; border-radius: 20px;
-    }
-    .ipl-tag { background: rgba(255,255,255,0.08); color: #ccc; }
-    .role-batsman    { background: rgba(0,200,83,0.1);  color: var(--green-cricket); }
-    .role-bowler     { background: rgba(255,59,48,0.1); color: var(--red-live); }
-    .role-allrounder { background: rgba(212,175,55,0.1); color: var(--gold); }
-    .role-wicketkeeper { background: rgba(45,156,219,0.1); color: var(--green-soft); }
-    .overseas-tag { background: rgba(45,156,219,0.1); color: var(--green-soft); }
-    .uncapped-tag { background: rgba(212,175,55,0.08); color: var(--gold-dark); }
-    .rtm-tag { background: rgba(255,59,48,0.12); color: var(--red-live); border: 1px solid rgba(255,59,48,0.3); }
+    /* ── Player card ── */
+    .player-card { background:linear-gradient(135deg,rgba(30,58,95,0.75),rgba(10,31,47,0.95)); border:1px solid rgba(212,175,55,0.2); border-radius:14px; padding:22px; position:relative; overflow:hidden; }
+    .player-card::before { content:''; position:absolute; inset:0; border-radius:14px; background:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); opacity:0.035; pointer-events:none; }
+    .pc-set { font-size:10px; font-weight:800; letter-spacing:0.18em; text-transform:uppercase; color:var(--gold-dark); margin-bottom:10px; }
+    .rtm-notice { display:flex; align-items:center; gap:10px; background:rgba(255,59,48,0.08); border:1px solid rgba(255,59,48,0.22); border-radius:8px; padding:8px 12px; margin-bottom:12px; font-size:13px; color:#ccc; }
+    .rtm-icon { font-family:var(--font-timer); font-size:9px; font-weight:900; letter-spacing:0.08em; background:rgba(255,59,48,0.15); color:var(--red-live); padding:2px 7px; border-radius:6px; flex-shrink:0; }
+    .pc-name { font-family:var(--font-heading); font-size:clamp(26px,4vw,44px); font-weight:900; letter-spacing:0.03em; background:linear-gradient(180deg,#fff 0%,var(--gold) 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; line-height:1.1; margin-bottom:12px; }
+    .pc-tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+    .ptag { font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; }
+    .ptag.ipl { background:rgba(255,255,255,0.07); color:#ccc; }
+    .ptag.r-batsman    { background:rgba(0,200,83,0.1);  color:var(--green-cricket); }
+    .ptag.r-bowler     { background:rgba(255,59,48,0.1); color:var(--red-live); }
+    .ptag.r-allrounder { background:rgba(212,175,55,0.1); color:var(--gold); }
+    .ptag.r-wicketkeeper { background:rgba(45,156,219,0.1); color:var(--green-soft); }
+    .ptag.os  { background:rgba(45,156,219,0.1); color:var(--green-soft); }
+    .ptag.unc { background:rgba(212,175,55,0.08); color:var(--gold-dark); }
+    .pc-base { font-size:13px; color:#666; margin-bottom:14px; }
+    .pc-incr { color:#555; }
 
-    .base-price { font-size: 13px; color: #666; margin-bottom: 12px; }
+    /* Bid ticker */
+    .bid-ticker { background:rgba(5,15,30,0.9); border:1px solid rgba(212,175,55,0.1); border-radius:12px; padding:18px 20px; text-align:center; margin-bottom:12px; transition:border-color 0.4s; }
+    .bid-ticker.active { border-color:rgba(212,175,55,0.35); }
+    .bt-amount { font-family:var(--font-timer); font-size:clamp(36px,5vw,54px); font-weight:900; background:linear-gradient(90deg,var(--gold-dark),var(--gold),var(--gold-light),var(--gold),var(--gold-dark)); background-size:200% auto; -webkit-background-clip:text; -webkit-text-fill-color:transparent; animation:shimmer 3s linear infinite; line-height:1; }
+    .bt-leader { font-size:15px; font-weight:700; margin-top:6px; }
+    .bt-leader.muted,.bt-leader:not([style]) { color:#555; font-size:13px; }
 
-    /* Bid display */
-    .bid-display {
-      background: rgba(10,31,47,0.8);
-      border-radius: var(--radius-md);
-      padding: 16px 20px; margin-bottom: 16px;
-      border: 1px solid rgba(212,175,55,0.1);
-      text-align: center;
-    }
-    .bid-amount {
-      font-family: var(--font-timer); font-size: 42px; font-weight: 900;
-      background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light), var(--gold), var(--gold-dark));
-      background-size: 200% auto;
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      animation: shimmer 3s linear infinite;
-    }
-    .bid-leader { font-size: 16px; font-weight: 700; margin-top: 4px; }
-    .bid-leader.muted { color: #555; font-size: 13px; }
-    .bid-increment { font-size: 12px; color: #555; margin-top: 6px; }
+    /* Timer bar */
+    .timer-bar { position:relative; background:rgba(10,31,47,0.8); border-radius:8px; padding:10px 16px; margin-bottom:10px; display:flex; align-items:center; gap:12px; border:1px solid rgba(0,200,83,0.2); overflow:hidden; }
+    .tb-track { position:absolute; left:0; top:0; bottom:0; background:rgba(0,200,83,0.12); border-radius:8px; transition:width 0.9s linear; }
+    .timer-bar.urgent { border-color:rgba(255,59,48,0.4); }
+    .timer-bar.urgent .tb-track { background:rgba(255,59,48,0.15); }
+    .tb-num { font-family:var(--font-timer); font-size:28px; font-weight:900; color:var(--green-cricket); position:relative; z-index:1; }
+    .timer-bar.urgent .tb-num { color:var(--red-live); }
 
-    /* Timer */
-    .timer-display {
-      text-align: center; padding: 12px;
-      background: rgba(10,31,47,0.6);
-      border-radius: var(--radius-md);
-      margin-bottom: 12px;
-    }
-    .timer-num {
-      font-family: var(--font-timer); font-size: 48px; font-weight: 900;
-      color: var(--green-cricket);
-    }
-    .timer-display.urgent .timer-num {
-      color: var(--red-live);
-      animation: pulse-chip 0.8s infinite;
-    }
-    .timer-label { font-size: 11px; color: #666; letter-spacing: 0.1em; text-transform: uppercase; }
+    /* Team bid panel */
+    .bid-panel { background:rgba(15,25,45,0.8); border:1px solid rgba(212,175,55,0.15); border-radius:14px; padding:16px; }
+    .bp-budget { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid rgba(212,175,55,0.1); }
+    .bp-lbl { font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.08em; font-weight:700; }
+    .bp-val { font-family:var(--font-timer); font-size:24px; font-weight:900; color:var(--green-cricket); }
+    .bp-val.low { color:var(--red-live); }
+    .bp-quick { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+    .qbtn { background:rgba(212,175,55,0.1); color:var(--gold); border:1px solid rgba(212,175,55,0.22); border-radius:8px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; transition:background 0.15s; }
+    .qbtn:hover { background:rgba(212,175,55,0.22); }
+    .bp-row { display:flex; gap:8px; }
+    .bp-row .athena-input { flex:1; }
+    .bid-btn { background:linear-gradient(135deg,var(--gold-dark),var(--gold)); color:var(--navy-deep); border:none; border-radius:8px; padding:10px 22px; font-weight:900; font-size:15px; cursor:pointer; flex-shrink:0; letter-spacing:0.04em; transition:filter 0.15s; }
+    .bid-btn:disabled { opacity:0.4; cursor:not-allowed; }
+    .bid-btn:not(:disabled):hover { filter:brightness(1.1); }
+    .rtm-btn { width:100%; margin-top:10px; background:rgba(255,59,48,0.1); color:var(--red-live); border:1px solid rgba(255,59,48,0.3); border-radius:8px; padding:10px; font-weight:700; font-size:13px; cursor:pointer; transition:background 0.15s; }
+    .rtm-btn:hover { background:rgba(255,59,48,0.2); }
 
-    /* Team bid */
-    .team-bid-section { margin-top: 4px; }
-    .my-budget-bar {
-      display: flex; justify-content: space-between; align-items: center;
-      background: rgba(10,31,47,0.6); border-radius: var(--radius-md);
-      padding: 10px 14px; margin-bottom: 10px;
-    }
-    .budget-label { font-size: 12px; color: #888; }
-    .budget-val { font-family: var(--font-timer); font-size: 20px; font-weight: 900; color: var(--green-cricket); }
-    .budget-val.low { color: var(--red-live); }
-    .bid-input-row { display: flex; gap: 8px; margin-bottom: 8px; }
-    .bid-input { width: 120px; flex-shrink: 0; }
-    .bid-btn { flex: 1; font-size: 15px !important; }
-    .rtm-btn {
-      width: 100%;
-      background: linear-gradient(135deg, rgba(255,59,48,0.2), rgba(255,59,48,0.1));
-      border: 1px solid rgba(255,59,48,0.4); color: var(--red-live);
-      border-radius: var(--radius-md); padding: 10px; font-weight: 700;
-      cursor: pointer; font-size: 14px;
-    }
+    /* Admin panel */
+    .admin-panel { background:rgba(8,20,36,0.9); border:1px solid rgba(212,175,55,0.2); border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:0; }
+    .ap-title { font-family:var(--font-timer); font-size:10px; font-weight:900; letter-spacing:0.14em; color:var(--gold); text-transform:uppercase; margin-bottom:14px; }
+    .ap-section { padding:14px 0; border-bottom:1px solid rgba(212,175,55,0.08); display:flex; flex-direction:column; gap:8px; }
+    .ap-section:last-child { border-bottom:none; padding-bottom:0; }
+    .ap-section-lbl { font-size:11px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:0.08em; }
+    .ap-hint { font-weight:400; color:#555; font-size:10px; }
+    .ap-hint-row { font-size:11px; color:#555; margin-top:4px; }
+    .ap-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .ap-select { flex:1; min-width:140px; font-size:13px !important; }
+    .ap-select option { background:var(--navy-deep); }
+    .ap-inp { width:90px; flex-shrink:0; }
+    .ap-inp-sm { width:80px; flex-shrink:0; }
 
-    /* Admin controls */
-    .admin-controls { margin-top: 4px; display: flex; flex-direction: column; gap: 10px; }
-    .admin-action-row { display: flex; gap: 8px; flex-wrap: wrap; }
-    .sold-btn {
-      flex: 2;
-      background: linear-gradient(135deg, #0d4a1f, var(--green-cricket));
-      color: #fff; border: none; border-radius: var(--radius-md);
-      padding: 12px; font-weight: 800; font-size: 14px; cursor: pointer;
-      transition: opacity 0.15s;
-    }
-    .sold-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .unsold-btn {
-      flex: 1;
-      background: linear-gradient(135deg, #3a0a0a, var(--red-pressure));
-      color: #fff; border: none; border-radius: var(--radius-md);
-      padding: 12px; font-weight: 700; font-size: 13px; cursor: pointer;
-    }
-    .timer-btn {
-      flex: 1;
-      background: rgba(30,58,95,0.6); color: #ccc;
-      border: 1px solid rgba(212,175,55,0.2);
-      border-radius: var(--radius-md); padding: 12px;
-      font-weight: 600; font-size: 13px; cursor: pointer;
-    }
+    /* Raise button */
+    .raise-btn { background:rgba(45,156,219,0.15); color:var(--green-soft); border:1px solid rgba(45,156,219,0.3); border-radius:8px; padding:9px 16px; font-weight:800; font-size:13px; cursor:pointer; flex-shrink:0; transition:background 0.15s; }
+    .raise-btn:disabled { opacity:0.4; cursor:not-allowed; }
+    .raise-btn:not(:disabled):hover { background:rgba(45,156,219,0.28); }
 
-    /* Recent bids */
-    .recent-bids { padding: 14px; }
-    .section-label {
-      font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
-      text-transform: uppercase; color: var(--gold-dark); margin-bottom: 10px;
-    }
-    .bid-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 10px; border-radius: var(--radius-md);
-      background: rgba(10,31,47,0.4); margin-bottom: 6px;
-      transition: all 0.2s;
-    }
-    .bid-row.top { background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.2); }
-    .bid-team { font-size: 13px; font-weight: 700; flex: 1; }
-    .bid-val { font-family: var(--font-timer); font-size: 15px; font-weight: 900; color: var(--gold); }
-    .rtm-pill {
-      font-size: 10px; font-weight: 800; letter-spacing: 0.06em;
-      background: rgba(255,59,48,0.12); color: var(--red-live);
-      border: 1px solid rgba(255,59,48,0.25);
-      padding: 2px 7px; border-radius: 10px;
-    }
-    .rtm-pill.small { font-size: 9px; }
+    /* Sold zone */
+    .sold-zone { background:rgba(0,200,83,0.03); border-radius:10px; padding:14px !important; border:1px solid rgba(0,200,83,0.1); }
+    .sold-zone.ready { border-color:rgba(0,200,83,0.25); background:rgba(0,200,83,0.06); }
+    .current-leader-row { display:flex; align-items:center; gap:8px; background:rgba(10,31,47,0.6); border-radius:8px; padding:8px 12px; }
+    .cl-label { font-size:11px; color:#888; font-weight:600; }
+    .cl-team { font-size:14px; font-weight:800; }
+    .cl-price { font-family:var(--font-timer); font-size:14px; font-weight:900; color:var(--gold); margin-left:auto; }
+    .sold-btn { background:linear-gradient(135deg,#0a3d1a,var(--green-cricket)); color:#fff; border:none; border-radius:8px; padding:10px 20px; font-weight:900; font-size:14px; letter-spacing:0.06em; cursor:pointer; flex-shrink:0; transition:all 0.15s; }
+    .sold-btn:disabled { opacity:0.35; cursor:not-allowed; filter:grayscale(0.5); }
+    .sold-btn:not(:disabled):hover { filter:brightness(1.12); }
 
-    /* Standings panel */
-    .standings-panel {
-      background: rgba(10,31,47,0.6);
-      border-left: 1px solid rgba(212,175,55,0.1);
-      overflow-y: auto;
-    }
-    .standings-list { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 12px; }
-    .standing-row {
-      display: flex; align-items: center; justify-content: space-between;
-      background: rgba(30,58,95,0.3);
-      border-left: 3px solid;
-      border-radius: 0 var(--radius-md) var(--radius-md) 0;
-      padding: 10px 12px;
-    }
-    .standing-team { display: flex; flex-direction: column; gap: 2px; }
-    .s-code { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; }
-    .s-name { font-size: 13px; font-weight: 600; color: #fff; }
-    .standing-stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-    .s-budget { font-family: var(--font-timer); font-size: 16px; font-weight: 900; color: var(--green-cricket); }
-    .s-budget.low { color: var(--red-live); }
-    .s-players { font-size: 11px; color: #666; }
+    /* Bottom actions */
+    .ap-bottom-row { display:flex; gap:8px; }
+    .timer-btn { flex:1; background:rgba(30,58,95,0.5); color:#aaa; border:1px solid rgba(212,175,55,0.15); border-radius:8px; padding:10px; font-weight:600; font-size:13px; cursor:pointer; transition:all 0.15s; }
+    .timer-btn.on { background:rgba(212,175,55,0.1); color:var(--gold); border-color:rgba(212,175,55,0.35); }
+    .unsold-btn { flex:1; background:linear-gradient(135deg,#2a0808,var(--red-pressure)); color:#fff; border:none; border-radius:8px; padding:10px; font-weight:700; font-size:13px; cursor:pointer; }
+    .unsold-btn:disabled { opacity:0.4; cursor:not-allowed; }
+    .complete-btn { width:100%; margin-top:8px; background:rgba(212,175,55,0.08); color:var(--gold); border:1px solid rgba(212,175,55,0.25); border-radius:8px; padding:10px; font-weight:700; font-size:13px; cursor:pointer; transition:background 0.15s; }
+    .complete-btn:hover { background:rgba(212,175,55,0.16); }
 
-    /* Unsold pool */
-    .unsold-pool { padding: 0 12px 12px; }
-    .unsold-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 8px 10px; background: rgba(255,59,48,0.06);
-      border: 1px solid rgba(255,59,48,0.15);
-      border-radius: var(--radius-md); margin-bottom: 6px;
-    }
-    .unsold-name { font-size: 13px; color: #ccc; }
-    .recall-btn {
-      font-size: 11px; font-weight: 700; color: var(--gold);
-      background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.25);
-      border-radius: 10px; padding: 3px 10px; cursor: pointer;
-    }
+    /* Inline error */
+    .inline-err { font-size:12px; color:var(--red-live); background:rgba(255,59,48,0.1); border:1px solid rgba(255,59,48,0.2); border-radius:6px; padding:6px 10px; }
 
-    /* Waiting */
-    .waiting-player {
-      text-align: center; padding: 40px;
-      color: #555; font-size: 16px;
-    }
+    /* Bid history */
+    .bid-history { background:rgba(8,20,36,0.7); border:1px solid rgba(212,175,55,0.1); border-radius:12px; padding:14px; }
+    .bh-title { font-family:var(--font-timer); font-size:10px; font-weight:900; letter-spacing:0.14em; color:var(--gold-dark); margin-bottom:10px; }
+    .bh-row { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; background:rgba(10,31,47,0.4); margin-bottom:6px; transition:all 0.2s; }
+    .bh-row.bh-top { background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.18); }
+    .bh-team { font-size:13px; font-weight:700; flex:1; }
+    .bh-meta { display:flex; align-items:center; gap:6px; }
+    .bh-time { font-size:10px; color:#555; }
+    .bh-amt { font-family:var(--font-timer); font-size:15px; font-weight:900; color:var(--gold); }
+    .rtm-pill { font-size:9px; font-weight:800; background:rgba(255,59,48,0.12); color:var(--red-live); border:1px solid rgba(255,59,48,0.25); padding:2px 6px; border-radius:6px; }
+    .rtm-pill.sm { font-size:8px; }
+
+    /* Right col */
+    .rc-title { font-family:var(--font-timer); font-size:9px; font-weight:900; letter-spacing:0.16em; color:var(--gold-dark); text-transform:uppercase; margin-bottom:10px; }
+    .team-row { display:flex; align-items:center; justify-content:space-between; border-left:3px solid; border-radius:0 8px 8px 0; padding:9px 11px; margin-bottom:7px; background:rgba(30,58,95,0.25); transition:all 0.2s; }
+    .team-row.leading { background:rgba(212,175,55,0.08) !important; box-shadow:0 0 10px rgba(212,175,55,0.08); }
+    .tr-left { display:flex; align-items:center; gap:8px; }
+    .tr-code { font-size:11px; font-weight:900; letter-spacing:0.05em; flex-shrink:0; }
+    .tr-info { display:flex; flex-direction:column; gap:1px; }
+    .tr-name { font-size:12px; font-weight:700; color:#fff; }
+    .tr-players { font-size:10px; color:#666; }
+    .tr-right { display:flex; flex-direction:column; align-items:flex-end; gap:3px; }
+    .tr-budget { font-family:var(--font-timer); font-size:13px; font-weight:900; color:var(--green-cricket); }
+    .tr-budget.low { color:var(--red-live); }
+
+    /* Unsold */
+    .unsold-section { margin-top:4px; }
+    .unsold-row { display:flex; align-items:center; justify-content:space-between; background:rgba(255,59,48,0.05); border:1px solid rgba(255,59,48,0.12); border-radius:8px; padding:7px 10px; margin-bottom:6px; }
+    .un-name { font-size:12px; color:#ccc; }
+    .recall-btn { font-size:10px; font-weight:700; color:var(--gold); background:rgba(212,175,55,0.1); border:1px solid rgba(212,175,55,0.2); border-radius:8px; padding:3px 9px; cursor:pointer; }
+    .recall-btn:disabled { opacity:0.4; cursor:not-allowed; }
 
     /* Toast */
-    .toast {
-      position: fixed; bottom: 80px; left: 50%;
-      transform: translateX(-50%);
-      padding: 10px 20px; border-radius: var(--radius-md);
-      font-size: 13px; font-weight: 700;
-      z-index: 200; animation: fade-in 0.2s ease;
-    }
-    .toast.error { background: var(--red-pressure); color: #fff; }
-    .toast.success { background: var(--green-cricket); color: var(--navy-deep); }
+    .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:var(--green-cricket); color:var(--navy-deep); padding:10px 22px; border-radius:10px; font-size:13px; font-weight:800; z-index:300; animation:fade-in 0.2s ease; white-space:nowrap; box-shadow:0 4px 20px rgba(0,0,0,0.4); }
+    .toast.toast-err { background:var(--red-pressure); color:#fff; }
+    @media (min-width:1024px) { .room { padding-bottom:0; } }
   `]
 })
 export class AuctionRoomComponent implements OnInit, OnDestroy {
-  session      = signal<any>(null);
-  standings    = signal<any[]>([]);
-  recentBids   = signal<any[]>([]);
-  unsoldSlots  = signal<any[]>([]);
-  myTeam       = signal<any>(null);
-  saving       = signal(false);
-  toast        = signal('');
-  toastType    = signal<'error'|'success'>('success');
-  timerActive  = signal(false);
-  timerSeconds = signal(10);
-  bidAmount    = 0;
-  selectedTeamId = '';
+  session     = signal<any>(null);
+  standings   = signal<any[]>([]);
+  recentBids  = signal<any[]>([]);
+  unsoldList  = signal<any[]>([]);
+  myTeam      = signal<any>(null);
+  saving      = signal(false);
+  toastMsg    = signal('');
+  toastIsErr  = signal(false);
+  timerOn     = signal(false);
+  timerSecs   = signal(10);
+  bidErr      = signal('');
+
+  // Form values
+  bidAmt        = 0;
+  raiseBidUserId = '';
+  soldUserId     = '';
+  soldAmt        = 0;
 
   private pollSub?: Subscription;
   private timerSub?: Subscription;
-  private get seasonId(): string { return this.seasonSvc.activeSeason()?.id ?? '1c18af32-c612-4a60-bd04-dffcbee185ff'; }
-  isLive        = computed(() => this.session()?.status === 'InProgress');
-  currentPlayer = computed(() => this.session()?.currentPlayer ?? null);
-  currentBid    = computed(() => this.currentPlayer()?.currentBidCr ?? this.currentPlayer()?.basePriceCr ?? 0);
-  leadingTeam   = computed(() => this.currentPlayer()?.currentLeaderTeam ?? null);
-  leadingTeamColour = computed(() => this.currentPlayer()?.currentLeaderColour ?? '#fff');
-  leadingTeamUserId = computed(() => this.currentPlayer()?.currentLeaderUserId ?? null);
+
+  private get sid() { return this.seasonSvc.activeSeason()?.id ?? '00000000-0000-0000-0000-000000000001'; }
+
+  isLive       = computed(() => this.session()?.status === 'InProgress');
+  cp           = computed(() => this.session()?.currentPlayer ?? null);
+  currentBid   = computed(() => this.cp()?.currentBidCr ?? this.cp()?.basePriceCr ?? 0);
+  hasBid       = computed(() => !!this.cp()?.currentLeaderTeam);
+  leaderName   = computed(() => this.cp()?.currentLeaderTeam ?? '');
+  leaderColour = computed(() => this.cp()?.currentLeaderColour ?? '#fff');
+  leadingUserId = computed(() => {
+    const id = this.cp()?.currentLeaderUserId;
+    if (id) return id;
+    // fallback: match by name
+    const name = this.leaderName();
+    return this.standings().find(t => t.teamName === name || t.shortCode === name)?.userId ?? null;
+  });
   minBid = computed(() => {
-    const p = this.currentPlayer();
+    const p = this.cp();
     if (!p) return 0;
-    return this.currentBid() + p.bidIncrementCr;
+    return this.hasBid() ? this.currentBid() + p.bidIncrementCr : p.basePriceCr;
   });
 
   constructor(
@@ -587,53 +505,130 @@ export class AuctionRoomComponent implements OnInit, OnDestroy {
     private teamSvc: TeamService,
     private seasonSvc: SeasonService,
     public auth: AuthService
-  ) {}
+  ) {
+    // Auto-fill soldUserId when leader changes
+    effect(() => {
+      const uid = this.leadingUserId();
+      if (uid && !this.soldUserId) this.soldUserId = uid;
+    });
+  }
 
   ngOnInit() {
+    if (!this.seasonSvc.activeSeason()) {
+      this.seasonSvc.getActive().subscribe({ next: () => this.boot(), error: () => this.boot() });
+    } else {
+      this.boot();
+    }
+  }
+
+  boot() {
     this.loadAll();
-    // Load active season
-    this.loadMyTeam();
-    // Poll every 3 seconds
+    if (!this.isAdmin()) this.loadMyTeam();
     this.pollSub = interval(3000).subscribe(() => this.loadAll());
   }
 
-  ngOnDestroy() {
-    this.pollSub?.unsubscribe();
-    this.timerSub?.unsubscribe();
-  }
+  ngOnDestroy() { this.pollSub?.unsubscribe(); this.timerSub?.unsubscribe(); }
 
   loadAll() {
-    this.auctionSvc.getSession(this.seasonId).subscribe({
+    this.auctionSvc.getSession(this.sid).subscribe({
       next: s => {
         this.session.set(s);
         if (s?.id && s.status !== 'NoSession') {
           this.loadStandings();
           if (s.currentPlayer?.slotId) this.loadBids(s.currentPlayer.slotId);
+          this.loadUnsold(s.id);
         }
-      },
-      error: () => {}
+      }, error: () => {}
     });
   }
 
   loadStandings() {
-    this.auctionSvc.getStandings(this.seasonId).subscribe({
-      next: d => this.standings.set(d),
-      error: () => {}
-    });
+    this.auctionSvc.getStandings(this.sid).subscribe({ next: d => this.standings.set(d as any[]), error: () => {} });
   }
 
   loadBids(slotId: string) {
-    this.auctionSvc.getBids(slotId).subscribe({
-      next: d => this.recentBids.set(d.slice(0, 8)),
-      error: () => {}
+    this.auctionSvc.getBids(slotId).subscribe({ next: d => this.recentBids.set((d as any[]).slice(0, 10)), error: () => {} });
+  }
+
+  loadUnsold(sessionId: string) {
+    this.auctionSvc.getResults(sessionId).subscribe({
+      next: (res: any[]) => {
+        this.unsoldList.set(res.filter(r => r.wentUnsold).map(r => ({
+          slotId: r.slotId,
+          playerName: r.playerName
+        })));
+      }, error: () => {}
     });
   }
 
   loadMyTeam() {
-    if (this.auth.isAdmin()) return;
-    this.teamSvc.getMyTeam(this.seasonId).subscribe({
-      next: t => this.myTeam.set(t),
-      error: () => {}
+    this.teamSvc.getMyTeam(this.sid).subscribe({ next: t => this.myTeam.set(t), error: () => {} });
+  }
+
+  setAmt(v: number) { this.bidAmt = v; }
+
+  teamBid(isRtm = false) {
+    const s = this.session(); const p = this.cp();
+    if (!s || !p) return;
+    this.bidErr.set('');
+    if (this.bidAmt < this.minBid()) { this.bidErr.set(`Minimum Rs. ${this.minBid()}Cr`); return; }
+    this.saving.set(true);
+    this.auctionSvc.placeBid({ auctionSessionId: s.id, auctionPlayerSlotId: p.slotId, amountCr: this.bidAmt, isRtm }).subscribe({
+      next: () => { this.saving.set(false); this.showToast('Bid placed!'); this.loadAll(); },
+      error: e => { this.bidErr.set(e?.error?.error ?? 'Bid failed.'); this.saving.set(false); }
+    });
+  }
+
+  adminRaise() {
+    const s = this.session(); const p = this.cp();
+    if (!s || !p || !this.raiseBidUserId) return;
+    this.bidErr.set('');
+    console.log('Raising bid for user', this.raiseBidUserId, 'with amount', this.bidAmt);
+    if (this.bidAmt < this.minBid()) { this.bidErr.set(`Minimum Rs. ${this.minBid()}Cr`); return; }
+    this.saving.set(true);
+    this.auctionSvc.placeBid({
+      auctionSessionId: s.id, auctionPlayerSlotId: p.slotId,
+      amountCr: this.bidAmt, isRtm: false, teamUserId: this.raiseBidUserId
+    }).subscribe({
+      next: () => { this.saving.set(false); this.showToast('Bid raised!'); this.raiseBidUserId = ''; this.loadAll(); },
+      error: e => { this.bidErr.set(e?.error?.error ?? 'Bid failed — check API logs.'); this.saving.set(false); }
+    });
+  }
+
+  markSold() {
+    const s = this.session(); const p = this.cp();
+    if (!s || !p || !this.hasBid()) return;
+    const winUserId = this.soldUserId || this.leadingUserId();
+    const finalPrice = this.soldAmt || this.currentBid();
+    if (!winUserId) { this.showToast('Select a team to sell to.', true); return; }
+    this.saving.set(true);
+    this.auctionSvc.markSold({ auctionSessionId: s.id, auctionPlayerSlotId: p.slotId, winningUserId: winUserId, finalPriceCr: finalPrice, wasRtm: false }).subscribe({
+      next: r => {
+        this.saving.set(false); this.showToast(r?.message ?? 'Sold!');
+        this.soldUserId = ''; this.soldAmt = 0;
+        this.timerSub?.unsubscribe(); this.timerOn.set(false); this.timerSecs.set(10);
+        this.loadAll();
+      },
+      error: e => { this.showToast(e?.error?.error ?? 'Sold failed.', true); this.saving.set(false); }
+    });
+  }
+
+  markUnsold() {
+    const s = this.session(); const p = this.cp();
+    if (!s || !p) return;
+    this.saving.set(true);
+    this.auctionSvc.markUnsold({ auctionSessionId: s.id, auctionPlayerSlotId: p.slotId }).subscribe({
+      next: r => { this.saving.set(false); this.showToast(r?.message ?? 'Marked unsold.'); this.loadAll(); },
+      error: e => { this.showToast(e?.error?.error ?? 'Failed.', true); this.saving.set(false); }
+    });
+  }
+
+  recall(slotId: string) {
+    if (!slotId) { this.showToast('No slot ID for this player.', true); return; }
+    this.saving.set(true);
+    this.auctionSvc.recallUnsold(slotId).subscribe({
+      next: () => { this.saving.set(false); this.showToast('Player recalled!'); this.loadAll(); },
+      error: e => { this.showToast(e?.error?.error ?? 'Recall failed.', true); this.saving.set(false); }
     });
   }
 
@@ -643,123 +638,36 @@ export class AuctionRoomComponent implements OnInit, OnDestroy {
     this.saving.set(true);
     this.auctionSvc.startAuction(sid).subscribe({
       next: () => { this.saving.set(false); this.loadAll(); },
-      error: e => { this.showToast(e?.error?.error ?? 'Failed to start.', 'error'); this.saving.set(false); }
-    });
-  }
-
-  placeBid(isRtm: boolean) {
-    const s = this.session();
-    const p = this.currentPlayer();
-    if (!s || !p) return;
-    this.saving.set(true);
-    this.auctionSvc.placeBid({
-      auctionSessionId:    s.id,
-      auctionPlayerSlotId: p.slotId,
-      amountCr:            this.bidAmount,
-      isRtm
-    }).subscribe({
-      next: () => { this.saving.set(false); this.showToast('Bid placed!', 'success'); this.loadAll(); },
-      error: e => { this.showToast(e?.error?.error ?? 'Bid failed.', 'error'); this.saving.set(false); }
-    });
-  }
-
-  adminBid() {
-    const s = this.session(); const p = this.currentPlayer();
-    if (!s || !p || !this.selectedTeamId) return;
-    this.saving.set(true);
-    this.auctionSvc.placeBid({
-      auctionSessionId:    s.id,
-      auctionPlayerSlotId: p.slotId,
-      amountCr:            this.bidAmount,
-      isRtm:               false
-    }).subscribe({
-      next: () => { this.saving.set(false); this.loadAll(); },
-      error: e => { this.showToast(e?.error?.error ?? 'Bid failed.', 'error'); this.saving.set(false); }
-    });
-  }
-
-  markSold() {
-    const s = this.session(); const p = this.currentPlayer();
-    if (!s || !p || !this.leadingTeamUserId()) return;
-    this.saving.set(true);
-    this.auctionSvc.markSold({
-      auctionSessionId:    s.id,
-      auctionPlayerSlotId: p.slotId,
-      winningUserId:       this.leadingTeamUserId(),
-      finalPriceCr:        this.currentBid(),
-      wasRtm:              false
-    }).subscribe({
-      next: r => {
-        this.saving.set(false);
-        this.showToast(r.message ?? 'Player sold!', 'success');
-        this.timerSub?.unsubscribe(); this.timerActive.set(false);
-        this.loadAll();
-      },
-      error: e => { this.showToast(e?.error?.error ?? 'Failed.', 'error'); this.saving.set(false); }
-    });
-  }
-
-  markUnsold() {
-    const s = this.session(); const p = this.currentPlayer();
-    if (!s || !p) return;
-    this.saving.set(true);
-    this.auctionSvc.markUnsold({
-      auctionSessionId:    s.id,
-      auctionPlayerSlotId: p.slotId
-    }).subscribe({
-      next: r => {
-        this.saving.set(false);
-        this.showToast(r.message ?? 'Marked unsold.', 'success');
-        this.loadAll();
-      },
-      error: e => { this.showToast(e?.error?.error ?? 'Failed.', 'error'); this.saving.set(false); }
-    });
-  }
-
-  recallUnsold(slotId: string) {
-    this.saving.set(true);
-    this.auctionSvc.recallUnsold(slotId).subscribe({
-      next: () => { this.saving.set(false); this.loadAll(); },
-      error: e => { this.showToast(e?.error?.error ?? 'Failed.', 'error'); this.saving.set(false); }
+      error: e => { this.showToast(e?.error?.error ?? 'Failed.', true); this.saving.set(false); }
     });
   }
 
   completeAuction() {
     const sid = this.session()?.id;
-    if (!sid) return;
-    if (!confirm('Complete the auction? All squads will be locked.')) return;
+    if (!sid || !confirm('Complete auction? Squads will be locked.')) return;
     this.saving.set(true);
     this.auctionSvc.completeAuction(sid).subscribe({
       next: () => { this.saving.set(false); this.loadAll(); },
-      error: e => { this.showToast(e?.error?.error ?? 'Failed.', 'error'); this.saving.set(false); }
+      error: e => { this.showToast(e?.error?.error ?? 'Failed.', true); this.saving.set(false); }
     });
   }
 
   toggleTimer() {
-    if (this.timerActive()) {
-      this.timerSub?.unsubscribe();
-      this.timerActive.set(false);
-      this.timerSeconds.set(10);
+    if (this.timerOn()) {
+      this.timerSub?.unsubscribe(); this.timerOn.set(false); this.timerSecs.set(10);
     } else {
-      let secs = 10;
-      this.timerSeconds.set(secs);
-      this.timerActive.set(true);
+      let s = 10; this.timerSecs.set(s); this.timerOn.set(true);
       this.timerSub = interval(1000).subscribe(() => {
-        secs--;
-        this.timerSeconds.set(secs);
-        if (secs <= 0) {
-          this.timerSub?.unsubscribe();
-          this.timerActive.set(false);
-          this.timerSeconds.set(10);
-        }
+        s--; this.timerSecs.set(s);
+        if (s <= 0) { this.timerSub?.unsubscribe(); this.timerOn.set(false); this.timerSecs.set(10); }
       });
     }
   }
 
   isAdmin() { return this.auth.isAdmin(); }
 
-  showToast(msg: string, type: 'error'|'success') {
-    this.toast.set(msg); this.toastType.set(type);
-    setTimeout(() => this.toast.set(''), 3000);
+  showToast(msg: string, err = false) {
+    this.toastMsg.set(msg); this.toastIsErr.set(err);
+    setTimeout(() => this.toastMsg.set(''), 3000);
   }
 }
