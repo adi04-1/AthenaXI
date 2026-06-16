@@ -78,7 +78,61 @@ import { SeasonService } from '../../core/services/season.service';
           <!-- ════ LEFT — PLAYER + BIDDING ════ -->
           <div class="left-col">
 
+            <!-- ── Round exhausted — choose unsold round or complete ── -->
+            @if (!cp() && isAdmin() && !reauctionMode()) {
+              <div class="round-end-card">
+                <div class="rec-badge">MAIN ORDER COMPLETE</div>
+                <h2>Primary Auction Round Finished</h2>
+                <p>
+                  {{ session()?.soldCount ?? 0 }} sold ·
+                  {{ unsoldList().length }} unsold remaining
+                </p>
+
+                @if (unsoldList().length > 0) {
+                  <button class="reauction-btn" (click)="reauctionMode.set(true)">
+                    Start Unsold Round ({{ unsoldList().length }} players)
+                  </button>
+                }
+                <button class="complete-btn-lg" (click)="completeAuction()" [disabled]="saving()">
+                  Complete Auction & Lock All Squads
+                </button>
+              </div>
+            }
+
+            <!-- ── Unsold round picker ── -->
+            @if (!cp() && isAdmin() && reauctionMode()) {
+              <div class="unsold-round-card">
+                <div class="urc-header">
+                  <span class="urc-title">UNSOLD ROUND — Pick a player to re-auction</span>
+                  <button class="urc-back" (click)="reauctionMode.set(false)">← Back</button>
+                </div>
+                @if (unsoldList().length === 0) {
+                  <p class="urc-empty">No unsold players remaining.</p>
+                } @else {
+                  <div class="urc-list">
+                    @for (u of unsoldList(); track u.slotId) {
+                      <div class="urc-row">
+                        <span class="urc-name">{{ u.playerName }}</span>
+                        <button class="urc-pick-btn" (click)="recall(u.slotId)" [disabled]="saving()">
+                          Re-auction
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
+            @if (!cp() && !isAdmin()) {
+              <div class="round-end-card">
+                <div class="rec-badge">ROUND COMPLETE</div>
+                <h2>Waiting for Auctioneer</h2>
+                <p>The auctioneer is reviewing unsold players or completing the auction.</p>
+              </div>
+            }
+
             <!-- Player card -->
+            @if (cp()) {
             <div class="player-card">
               <div class="pc-set">{{ cp()?.setDisplayName ?? cp()?.auctionSet }}</div>
 
@@ -158,9 +212,9 @@ import { SeasonService } from '../../core/services/season.service';
                   <div class="ap-section-lbl">Raise bid on behalf of team</div>
                   <div class="ap-row">
                     <select class="athena-input ap-select" [(ngModel)]="raiseBidUserId">
-                      <option [ngValue]="">Select team...</option>
-                      @for (t of standings(); track t.userId) {
-                        <option [ngValue]="t.userId">{{ t.shortCode }} — {{ t.teamName }} (Rs. {{ t.budgetRemainingCr }}Cr)</option>
+                      <option value="">Select team...</option>
+                      @for (t of standings(); track t.teamId) {
+                        <option [value]="t.userId">{{ t.shortCode }} — {{ t.teamName }} (Rs. {{ t.budgetRemainingCr }}Cr)</option>
                       }
                     </select>
                   </div>
@@ -184,7 +238,7 @@ import { SeasonService } from '../../core/services/season.service';
                     <div class="current-leader-row">
                       <span class="cl-label">Current leader:</span>
                       <span class="cl-team" [style.color]="leaderColour()">{{ leaderName() }}</span>
-                      <span class="cl-price"> => Rs. {{ currentBid() }}Cr</span>
+                      <span class="cl-price">=> Rs. {{ currentBid() }}Cr</span>
                     </div>
                   }
 
@@ -242,6 +296,7 @@ import { SeasonService } from '../../core/services/season.service';
                 }
               </div>
             }
+            } <!-- end @if (cp()) -->
 
           </div>
 
@@ -275,6 +330,39 @@ import { SeasonService } from '../../core/services/season.service';
                       <button class="recall-btn" (click)="recall(u.slotId)" [disabled]="saving() || !!cp()">
                         {{ cp() ? 'In Progress' : 'Recall' }}
                       </button>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
+            @if (isAdmin() && soldHistory().length > 0) {
+              <div class="sold-history-section">
+                <div class="rc-title" style="margin-top:16px">RECENTLY SOLD</div>
+                @for (r of soldHistory(); track r.slotId) {
+                  <div class="sold-hist-row">
+                    @if (correctingSlotId() !== r.slotId) {
+                      <div class="shr-main">
+                        <span class="shr-name">{{ r.playerName }}</span>
+                        <span class="shr-team">{{ r.winningTeamCode }} · Rs. {{ r.finalPriceCr }}Cr</span>
+                      </div>
+                      <button class="correct-btn" (click)="openCorrect(r)" [disabled]="saving()">Correct</button>
+                    } @else {
+                      <div class="correct-form">
+                        <div class="cf-name">{{ r.playerName }} — fix assignment</div>
+                        <select class="athena-input cf-sel" [(ngModel)]="correctUserId">
+                          <option value="">Select team...</option>
+                          @for (t of standings(); track t.teamId) {
+                            <option [value]="t.userId">{{ t.shortCode }} — {{ t.teamName }}</option>
+                          }
+                        </select>
+                        <input class="athena-input cf-price" type="number" [(ngModel)]="correctPrice" step="0.25" placeholder="Price" />
+                        <input class="athena-input cf-reason" [(ngModel)]="correctReason" placeholder="Reason (optional)" />
+                        <div class="cf-actions">
+                          <button class="cf-cancel" (click)="closeCorrect()">Cancel</button>
+                          <button class="cf-save" (click)="submitCorrect(r.playerId)" [disabled]="!correctUserId || saving()">Save Fix</button>
+                        </div>
+                      </div>
                     }
                   </div>
                 }
@@ -451,6 +539,46 @@ import { SeasonService } from '../../core/services/season.service';
     .recall-btn { font-size:10px; font-weight:700; color:var(--gold); background:rgba(212,175,55,0.1); border:1px solid rgba(212,175,55,0.2); border-radius:8px; padding:3px 9px; cursor:pointer; }
     .recall-btn:disabled { opacity:0.4; cursor:not-allowed; }
 
+    /* Round end / unsold round */
+    .round-end-card { background:linear-gradient(135deg,rgba(30,58,95,0.7),rgba(10,31,47,0.9)); border:1px solid rgba(212,175,55,0.2); border-radius:14px; padding:36px 28px; text-align:center; }
+    .rec-badge { font-family:var(--font-timer); font-size:10px; font-weight:900; letter-spacing:0.16em; color:var(--gold); background:rgba(212,175,55,0.1); border:1px solid rgba(212,175,55,0.25); border-radius:20px; padding:4px 14px; display:inline-block; margin-bottom:16px; }
+    .round-end-card h2 { font-size:20px; font-weight:800; margin:0 0 8px; }
+    .round-end-card p { color:#888; font-size:13px; margin:0 0 18px; }
+    .reauction-btn { display:block; width:100%; background:rgba(45,156,219,0.15); color:var(--green-soft); border:1px solid rgba(45,156,219,0.3); border-radius:10px; padding:12px; font-weight:800; font-size:14px; cursor:pointer; margin-bottom:10px; transition:background 0.15s; }
+    .reauction-btn:hover { background:rgba(45,156,219,0.26); }
+    .complete-btn-lg { display:block; width:100%; background:linear-gradient(135deg,var(--gold-dark),var(--gold)); color:var(--navy-deep); border:none; border-radius:10px; padding:12px; font-weight:900; font-size:14px; cursor:pointer; letter-spacing:0.03em; }
+    .complete-btn-lg:disabled { opacity:0.5; cursor:not-allowed; }
+
+    .unsold-round-card { background:rgba(8,20,36,0.9); border:1px solid rgba(45,156,219,0.25); border-radius:14px; padding:18px; }
+    .urc-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+    .urc-title { font-family:var(--font-timer); font-size:11px; font-weight:900; letter-spacing:0.1em; color:var(--green-soft); }
+    .urc-back { background:none; border:1px solid rgba(212,175,55,0.2); color:#aaa; border-radius:6px; padding:5px 10px; font-size:11px; cursor:pointer; }
+    .urc-empty { color:#555; font-size:13px; text-align:center; padding:20px 0; }
+    .urc-list { display:flex; flex-direction:column; gap:8px; }
+    .urc-row { display:flex; align-items:center; justify-content:space-between; background:rgba(30,58,95,0.3); border-radius:8px; padding:10px 14px; }
+    .urc-name { font-size:14px; font-weight:600; color:#fff; }
+    .urc-pick-btn { background:rgba(45,156,219,0.15); color:var(--green-soft); border:1px solid rgba(45,156,219,0.3); border-radius:8px; padding:6px 14px; font-size:12px; font-weight:700; cursor:pointer; transition:background 0.15s; }
+    .urc-pick-btn:hover:not(:disabled) { background:rgba(45,156,219,0.28); }
+    .urc-pick-btn:disabled { opacity:0.4; cursor:not-allowed; }
+
+    /* Sold history + correction */
+    .sold-hist-row { background:rgba(0,200,83,0.04); border:1px solid rgba(0,200,83,0.1); border-radius:8px; padding:8px 10px; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .shr-main { display:flex; flex-direction:column; gap:2px; }
+    .shr-name { font-size:12px; font-weight:700; color:#fff; }
+    .shr-team { font-size:10px; color:#666; }
+    .correct-btn { font-size:10px; font-weight:700; color:var(--gold-dark); background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.18); border-radius:8px; padding:4px 10px; cursor:pointer; flex-shrink:0; }
+    .correct-btn:hover:not(:disabled) { background:rgba(212,175,55,0.18); color:var(--gold); }
+    .correct-btn:disabled { opacity:0.4; cursor:not-allowed; }
+
+    .correct-form { display:flex; flex-direction:column; gap:6px; width:100%; }
+    .cf-name { font-size:11px; font-weight:700; color:var(--gold); margin-bottom:2px; }
+    .cf-sel, .cf-price, .cf-reason { font-size:12px !important; padding:6px 10px !important; }
+    .cf-sel option { background:var(--navy-deep); }
+    .cf-actions { display:flex; gap:6px; justify-content:flex-end; }
+    .cf-cancel { background:none; border:1px solid #444; color:#888; border-radius:6px; padding:5px 12px; font-size:11px; cursor:pointer; }
+    .cf-save { background:rgba(0,200,83,0.15); color:var(--green-cricket); border:1px solid rgba(0,200,83,0.3); border-radius:6px; padding:5px 14px; font-size:11px; font-weight:700; cursor:pointer; }
+    .cf-save:disabled { opacity:0.4; cursor:not-allowed; }
+
     /* Toast */
     .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:var(--green-cricket); color:var(--navy-deep); padding:10px 22px; border-radius:10px; font-size:13px; font-weight:800; z-index:300; animation:fade-in 0.2s ease; white-space:nowrap; box-shadow:0 4px 20px rgba(0,0,0,0.4); }
     .toast.toast-err { background:var(--red-pressure); color:#fff; }
@@ -462,6 +590,11 @@ export class AuctionRoomComponent implements OnInit, OnDestroy {
   standings   = signal<any[]>([]);
   recentBids  = signal<any[]>([]);
   unsoldList  = signal<any[]>([]);
+  soldHistory = signal<any[]>([]);
+  correctingSlotId = signal<string | null>(null);
+  correctUserId = '';
+  correctPrice  = 0;
+  correctReason = '';
   myTeam      = signal<any>(null);
   saving      = signal(false);
   toastMsg    = signal('');
@@ -469,6 +602,7 @@ export class AuctionRoomComponent implements OnInit, OnDestroy {
   timerOn     = signal(false);
   timerSecs   = signal(10);
   bidErr      = signal('');
+  reauctionMode = signal(false);
 
   // Form values
   bidAmt        = 0;
@@ -510,6 +644,10 @@ export class AuctionRoomComponent implements OnInit, OnDestroy {
     effect(() => {
       const uid = this.leadingUserId();
       if (uid && !this.soldUserId) this.soldUserId = uid;
+    });
+    // Auto-exit unsold-round picker once a player goes active again
+    effect(() => {
+      if (this.cp()) this.reauctionMode.set(false);
     });
   }
 
@@ -557,6 +695,11 @@ export class AuctionRoomComponent implements OnInit, OnDestroy {
           slotId: r.slotId,
           playerName: r.playerName
         })));
+        this.soldHistory.set(
+          res.filter(r => !r.wentUnsold && r.winningTeamId)
+             .slice(-8)
+             .reverse()
+        );
       }, error: () => {}
     });
   }
@@ -583,7 +726,6 @@ export class AuctionRoomComponent implements OnInit, OnDestroy {
     const s = this.session(); const p = this.cp();
     if (!s || !p || !this.raiseBidUserId) return;
     this.bidErr.set('');
-    console.log('Raising bid for user', this.raiseBidUserId, 'with amount', this.bidAmt);
     if (this.bidAmt < this.minBid()) { this.bidErr.set(`Minimum Rs. ${this.minBid()}Cr`); return; }
     this.saving.set(true);
     this.auctionSvc.placeBid({
@@ -629,6 +771,38 @@ export class AuctionRoomComponent implements OnInit, OnDestroy {
     this.auctionSvc.recallUnsold(slotId).subscribe({
       next: () => { this.saving.set(false); this.showToast('Player recalled!'); this.loadAll(); },
       error: e => { this.showToast(e?.error?.error ?? 'Recall failed.', true); this.saving.set(false); }
+    });
+  }
+
+  openCorrect(result: any) {
+    this.correctingSlotId.set(result.slotId);
+    this.correctUserId = result.winningTeamId
+      ? (this.standings().find(t => t.teamId === result.winningTeamId)?.userId ?? '')
+      : '';
+    this.correctPrice  = result.finalPriceCr ?? 0;
+    this.correctReason = '';
+  }
+
+  closeCorrect() { this.correctingSlotId.set(null); }
+
+  submitCorrect(playerId: string) {
+    const sid = this.session()?.id;
+    if (!sid || !this.correctUserId) { this.showToast('Select a team.', true); return; }
+    this.saving.set(true);
+    this.auctionSvc.adminCorrect({
+      auctionSessionId: sid,
+      playerId,
+      newWinningUserId: this.correctUserId,
+      newPriceCr: this.correctPrice,
+      reason: this.correctReason || 'Manual correction'
+    }).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.showToast('Correction applied.');
+        this.correctingSlotId.set(null);
+        this.loadAll();
+      },
+      error: (e: any) => { this.showToast(e?.error?.error ?? 'Correction failed.', true); this.saving.set(false); }
     });
   }
 
