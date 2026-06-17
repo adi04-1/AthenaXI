@@ -62,7 +62,12 @@ public record UpdateSeasonConfigRequest(
     int PtRunOutDirect, int PtRunOutAssist
 );
 
-public record UpdateSeasonStatusRequest(string Status);
+public record UpdateSeasonStatusRequest(
+    string Status,
+    DateTime? AuctionDate = null,
+    DateTime? SeasonStartDate = null,
+    DateTime? SeasonEndDate = null
+);
 
 // ─── Responses ────────────────────────────────────────────────────────────────
 

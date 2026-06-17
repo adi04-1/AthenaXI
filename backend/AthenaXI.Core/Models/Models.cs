@@ -10,6 +10,15 @@ public class User
     public string Username { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
+
+    // ⚠️ SECURITY TRADEOFF — accepted deliberately for this closed friend-group app.
+    // Stores the password in cleartext alongside the BCrypt hash purely so an admin
+    // can view/recover a team's password from the Season admin panel. NEVER expose
+    // this field in any TeamOwner-role API response — admin-only, always.
+    // If this DB ever leaks, every password leaks. Do not copy this pattern into
+    // any app handling real user accounts.
+    public string? PlainPassword { get; set; }
+
     public UserRole Role { get; set; } = UserRole.TeamOwner;
     public string? TeamName { get; set; }
     public bool IsActive { get; set; } = true;

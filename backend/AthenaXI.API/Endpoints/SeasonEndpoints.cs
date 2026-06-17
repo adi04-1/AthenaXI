@@ -182,6 +182,9 @@ public static class SeasonEndpoints
             if (season is null) return Results.NotFound();
 
             season.Status = status;
+            if (req.AuctionDate.HasValue)     season.AuctionDate     = req.AuctionDate.Value.ToUniversalTime();
+            if (req.SeasonStartDate.HasValue) season.SeasonStartDate = req.SeasonStartDate.Value.ToUniversalTime();
+            if (req.SeasonEndDate.HasValue)   season.SeasonEndDate   = req.SeasonEndDate.Value.ToUniversalTime();
             await db.SaveChangesAsync();
 
             return Results.Ok(new { message = $"Season status updated to {status}." });

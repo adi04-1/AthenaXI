@@ -51,6 +51,7 @@ public static class TeamEndpoints
                 Username     = req.Username.Trim().ToLower(),
                 Email        = $"{req.Username.Trim().ToLower()}@athenaxi.local",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password),
+                PlainPassword = req.Password, // admin-recovery field — see security note on User model
                 Role         = UserRole.TeamOwner,
                 TeamName     = req.TeamName,
                 IsActive     = true,
@@ -186,23 +187,54 @@ public static class TeamEndpoints
             AthenaXIDbContext db,
             ClaimsPrincipal caller) =>
         {
-            var userId     = Guid.Parse(caller.FindFirst("userId")!.Value);
-            var callerRole = caller.FindFirst(ClaimTypes.Role)?.Value;
+            var userId  = Guid.Parse(caller.FindFirst("userId")!.Value);
+            var isAdmin = IsAdminOrOwner(caller);
 
             var team = await db.FantasyTeams.FindAsync(id);
             if (team is null) return Results.NotFound();
 
             // Only the team owner or admin can update
-            if (team.UserId != userId && !IsAdminOrOwner(caller))
+            if (team.UserId != userId && !isAdmin)
                 return Results.Forbid();
 
             team.Name             = req.TeamName.Trim();
             team.ShortCode        = req.ShortCode.Trim().ToUpper();
             team.ThemeColour      = req.ThemeColour;
             team.OwnerDisplayName = req.OwnerDisplayName.Trim();
+
+            // Password reset — admin only, never allowed via self-service team update
+            if (isAdmin && !string.IsNullOrWhiteSpace(req.NewPassword))
+            {
+                var user = await db.Users.FindAsync(team.UserId);
+                if (user is not null)
+                {
+                    user.PasswordHash  = BCrypt.Net.BCrypt.HashPassword(req.NewPassword);
+                    user.PlainPassword = req.NewPassword; // admin-recovery field — see security note on User model
+                }
+            }
+
             await db.SaveChangesAsync();
 
             return Results.Ok(new { message = "Team updated." });
+        }).RequireAuthorization();
+
+        // ── GET /api/teams/{id}/credentials ───────────────────────────────────
+        // Admin-only — reveals username + plaintext password for recovery.
+        // See security note on User.PlainPassword in Models.cs.
+        group.MapGet("/{id:guid}/credentials", async (
+            Guid id,
+            AthenaXIDbContext db,
+            ClaimsPrincipal caller) =>
+        {
+            if (!IsAdminOrOwner(caller)) return Results.Forbid();
+
+            var team = await db.FantasyTeams.FindAsync(id);
+            if (team is null) return Results.NotFound();
+
+            var user = await db.Users.FindAsync(team.UserId);
+            if (user is null) return Results.NotFound();
+
+            return Results.Ok(new TeamCredentialsResponse(team.Id, user.Username, user.PlainPassword));
         }).RequireAuthorization();
 
         // ── POST /api/teams/retentions ────────────────────────────────────────

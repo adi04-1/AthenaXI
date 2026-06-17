@@ -730,6 +730,97 @@ public static class AuctionEndpoints
                 team.Name, team.ShortCode, team.ThemeColour,
                 invite.Status.ToString(), invite.SentAt, invite.RespondedAt));
         }).RequireAuthorization();
+
+        // ── GET /api/auction/{sessionId}/sets ─────────────────────────────────
+        // Returns each distinct AuctionSet in order, with pending/sold/unsold counts —
+        // powers the admin "Shuffle Set" picker UI.
+        group.MapGet("/{sessionId:guid}/sets", async (
+            Guid sessionId,
+            AthenaXIDbContext db) =>
+        {
+            var slots = await db.AuctionPlayerSlots
+                .Where(s => s.AuctionSessionId == sessionId)
+                .ToListAsync();
+
+            if (!slots.Any()) return Results.Ok(Array.Empty<object>());
+
+            var grouped = slots
+                .GroupBy(s => s.AuctionSet)
+                .OrderBy(g => g.Min(s => s.AuctionOrder))
+                .Select(g => new
+                {
+                    auctionSet     = g.Key,
+                    setDisplayName = g.First().SetDisplayName ?? g.Key,
+                    totalPlayers   = g.Count(),
+                    pendingCount   = g.Count(s => s.Status == AuctionSlotStatus.Pending),
+                    soldCount      = g.Count(s => s.Status == AuctionSlotStatus.Sold),
+                    unsoldCount    = g.Count(s => s.Status == AuctionSlotStatus.Unsold),
+                    canShuffle     = g.Count(s => s.Status == AuctionSlotStatus.Pending) > 1,
+                });
+
+            return Results.Ok(grouped);
+        }).AllowAnonymous();
+
+        // ── POST /api/auction/{sessionId}/shuffle-set ─────────────────────────
+        // Admin-triggered — re-randomizes AuctionOrder only among Pending slots
+        // sharing the given AuctionSet. Sets themselves stay in fixed sequence;
+        // only the order of not-yet-auctioned players within the chosen set changes.
+        // Already-Sold/Unsold/Active slots are untouched, and the shuffled values
+        // stay within the same numeric range the set already occupied, so it can
+        // never reorder players across set boundaries.
+        group.MapPost("/{sessionId:guid}/shuffle-set", async (
+            Guid sessionId,
+            ShuffleSetRequest req,
+            AthenaXIDbContext db,
+            ClaimsPrincipal caller) =>
+        {
+            if (!IsAdminOrOwner(caller)) return Results.Forbid();
+
+            var session = await db.AuctionSessions.FindAsync(sessionId);
+            if (session is null) return Results.NotFound();
+
+            // Don't allow shuffling the set currently being auctioned mid-bid —
+            // only Pending slots are touched anyway, but block if anything in
+            // this set is Active to avoid confusing the live bidding screen.
+            var activeInSet = await db.AuctionPlayerSlots.AnyAsync(s =>
+                s.AuctionSessionId == sessionId &&
+                s.AuctionSet == req.AuctionSet &&
+                s.Status == AuctionSlotStatus.Active);
+            if (activeInSet)
+                return Results.BadRequest(new { error = "Resolve the current player before shuffling this set." });
+
+            var pendingSlots = await db.AuctionPlayerSlots
+                .Where(s => s.AuctionSessionId == sessionId &&
+                            s.AuctionSet == req.AuctionSet &&
+                            s.Status == AuctionSlotStatus.Pending)
+                .ToListAsync();
+
+            if (pendingSlots.Count < 2)
+                return Results.BadRequest(new { error = "Need at least 2 pending players in this set to shuffle." });
+
+            // Preserve the exact set of AuctionOrder values already in use for this
+            // set — shuffle is a permutation of those same values, never introducing
+            // new numbers or touching slots outside this set.
+            var orderValues = pendingSlots.Select(s => s.AuctionOrder).ToList();
+            var rng = Random.Shared;
+            for (int i = orderValues.Count - 1; i > 0; i--)
+            {
+                int j = rng.Next(i + 1);
+                (orderValues[i], orderValues[j]) = (orderValues[j], orderValues[i]);
+            }
+
+            for (int i = 0; i < pendingSlots.Count; i++)
+                pendingSlots[i].AuctionOrder = orderValues[i];
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new
+            {
+                message      = $"Shuffled {pendingSlots.Count} players in {req.AuctionSet}.",
+                auctionSet   = req.AuctionSet,
+                playerCount  = pendingSlots.Count,
+            });
+        }).RequireAuthorization();
     }
     
     // ── Helper — advance to next pending player ───────────────────────────────

@@ -24,6 +24,10 @@ public record MarkUnsoldRequest(
     Guid AuctionPlayerSlotId
 );
 
+public record ShuffleSetRequest(
+    string AuctionSet
+);
+
 public record AdminCorrectRequest(
     Guid AuctionSessionId,
     Guid PlayerId,

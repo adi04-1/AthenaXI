@@ -16,7 +16,8 @@ public record UpdateFantasyTeamRequest(
     string TeamName,
     string ShortCode,
     string ThemeColour,
-    string OwnerDisplayName
+    string OwnerDisplayName,
+    string? NewPassword = null   // Admin-only — when provided, resets the team's login password
 );
 
 public record UploadRetentionsRequest(
@@ -53,4 +54,12 @@ public record RetainedPlayerResponse(
     string Role,
     decimal RetentionCostCr,
     string Slot
+);
+
+// Admin-only — never returned to TeamOwner-role callers.
+// See security note on User.PlainPassword in Models.cs before extending usage of this.
+public record TeamCredentialsResponse(
+    Guid TeamId,
+    string Username,
+    string? PlainPassword
 );
