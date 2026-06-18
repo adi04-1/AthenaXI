@@ -35,9 +35,9 @@ import { TeamService } from '../../core/services/team.service';
             <div class="athena-field"><label class="athena-field-label">Mode</label>
               <select class="athena-input" [(ngModel)]="form.mode">
                 <option value="">Select mode...</option>
-                <option value="FreshAuction">🆕 Fresh Auction</option>
-                <option value="AuctionWithRetentions">🟡 Auction with Retentions</option>
-                <option value="DirectAllocation">🔵 Direct Allocation</option>
+                <option value="FreshAuction">ðŸ†• Fresh Auction</option>
+                <option value="AuctionWithRetentions">ðŸŸ¡ Auction with Retentions</option>
+                <option value="DirectAllocation">ðŸ”µ Direct Allocation</option>
               </select></div>
             <div class="athena-field"><label class="athena-field-label">Auction Date</label>
               <input class="athena-input" type="date" [(ngModel)]="form.auctionDate" /></div>
@@ -99,6 +99,10 @@ import { TeamService } from '../../core/services/team.service';
                       </select></div>
                     <div class="athena-field"><label class="athena-field-label">Auction Date</label>
                       <input class="athena-input" type="date" [(ngModel)]="editForm.auctionDate" /></div>
+                    <div class="athena-field"><label class="athena-field-label">Season Start</label>
+                      <input class="athena-input" type="date" [(ngModel)]="editForm.seasonStartDate" /></div>
+                    <div class="athena-field"><label class="athena-field-label">Season End</label>
+                      <input class="athena-input" type="date" [(ngModel)]="editForm.seasonEndDate" /></div>
                   </div>
                   <div class="panel-actions">
                     <button class="athena-btn athena-btn-secondary" (click)="editingId.set(null)">Cancel</button>
@@ -160,7 +164,35 @@ import { TeamService } from '../../core/services/team.service';
                                 <div style="font-size:11px;color:#666">{{ '@' + t.username }}</div>
                               </div>
                               <span style="font-family:var(--font-timer);font-size:14px;color:var(--gold);font-weight:700">💰{{ t.budgetRemainingCr }}Cr</span>
+                              <button class="cred-toggle-btn" (click)="toggleCredentials(t.id)">
+                                {{ credentialsOpenId() === t.id ? 'Hide' : 'Password' }}
+                              </button>
                             </div>
+                            @if (credentialsOpenId() === t.id) {
+                              <div class="cred-panel animate-fade-in">
+                                @if (loadingCreds()) {
+                                  <span class="athena-label">Loading...</span>
+                                } @else {
+                                  <div class="cred-row">
+                                    <span class="cred-label">Current password</span>
+                                    <span class="cred-value">
+                                      {{ showPlain() ? (currentCreds()?.plainPassword ?? 'â€” not recorded â€”') : 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢' }}
+                                    </span>
+                                    <button class="cred-eye-btn" (click)="showPlain.set(!showPlain())">
+                                      {{ showPlain() ? 'Hide' : 'Reveal' }}
+                                    </button>
+                                  </div>
+                                  <div class="cred-row">
+                                    <input class="athena-input cred-reset-input" type="text"
+                                      [(ngModel)]="resetPasswordValue" placeholder="Set new password..." />
+                                    <button class="cred-reset-btn" (click)="resetTeamPassword(t.id)"
+                                      [disabled]="!resetPasswordValue || saving()">
+                                      Reset
+                                    </button>
+                                  </div>
+                                }
+                              </div>
+                            }
                           }
                         </div>
                       } @else {
@@ -223,6 +255,16 @@ import { TeamService } from '../../core/services/team.service';
     .clone-chip { background: rgba(30,58,95,0.4); border: 1px solid; border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer; color: #ccc; display: flex; gap: 6px; align-items: center; transition: background 0.15s; }
     .clone-chip:hover { background: rgba(30,58,95,0.8); }
     .team-row-inner { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: rgba(10,31,47,0.6); border-left: 3px solid; border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+    .cred-toggle-btn { font-size:11px; font-weight:700; color:var(--gold-dark); background:rgba(212,175,55,0.08); border:1px solid rgba(212,175,55,0.18); border-radius:8px; padding:5px 10px; cursor:pointer; flex-shrink:0; white-space:nowrap; }
+    .cred-toggle-btn:hover { background:rgba(212,175,55,0.18); color:var(--gold); }
+    .cred-panel { background:rgba(8,20,36,0.7); border:1px solid rgba(212,175,55,0.15); border-radius:var(--radius-md); padding:12px 14px; display:flex; flex-direction:column; gap:10px; margin-top:-4px; margin-bottom:4px; }
+    .cred-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .cred-label { font-size:11px; color:#888; min-width:110px; }
+    .cred-value { font-family:var(--font-timer); font-size:13px; color:#fff; letter-spacing:0.04em; flex:1; }
+    .cred-eye-btn { font-size:11px; font-weight:700; color:var(--green-soft); background:rgba(45,156,219,0.1); border:1px solid rgba(45,156,219,0.25); border-radius:8px; padding:4px 10px; cursor:pointer; flex-shrink:0; }
+    .cred-reset-input { flex:1; min-width:140px; font-size:12px !important; padding:7px 10px !important; }
+    .cred-reset-btn { font-size:11px; font-weight:700; color:var(--red-live); background:rgba(255,59,48,0.08); border:1px solid rgba(255,59,48,0.2); border-radius:8px; padding:7px 14px; cursor:pointer; flex-shrink:0; }
+    .cred-reset-btn:disabled { opacity:0.4; cursor:not-allowed; }
     .config-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
     .config-item { background: rgba(10,31,47,0.6); border-radius: var(--radius-md); padding: 12px; display: flex; flex-direction: column; gap: 4px; }
     select.athena-input { cursor: pointer; }
@@ -244,15 +286,22 @@ export class SeasonsAdminComponent implements OnInit {
   editingId     = signal<string|null>(null);
   activeTab     = signal<'teams'|'config'>('teams');
 
+  // Team credentials reveal/reset â€” admin-only feature
+  credentialsOpenId = signal<string|null>(null);
+  loadingCreds      = signal(false);
+  currentCreds      = signal<any>(null);
+  showPlain         = signal(false);
+  resetPasswordValue = '';
+
   form     = { name:'', year: new Date().getFullYear(), mode:'', auctionDate:'', seasonStartDate:'', seasonEndDate:'' };
-  editForm = { name:'', status:'', auctionDate:'' };
+  editForm = { name:'', status:'', auctionDate:'', seasonStartDate:'', seasonEndDate:'' };
   teamForm = { teamName:'', shortCode:'', themeColour:'#D4AF37', ownerDisplayName:'', username:'', password:'' };
 
   configItems() {
     const c = this.seasonConfig();
     if (!c) return [];
     return [
-      { label: 'Budget', value: `â‚¹${c.budgetPerTeamCr}Cr` },
+      { label: 'Budget', value: `💰${c.budgetPerTeamCr}Cr` },
       { label: 'Squad', value: c.minSquadSize },
       { label: 'Overseas', value: c.maxOverseasPlayers },
       { label: 'RTM Slots', value: c.rtmSlotsPerTeam },
@@ -280,6 +329,47 @@ export class SeasonsAdminComponent implements OnInit {
     this.teamSvc.getTeamsBySeason(sid).subscribe({ next: d => this.seasonTeams.set(d), error: () => {} });
   }
 
+  toggleCredentials(teamId: string) {
+    if (this.credentialsOpenId() === teamId) {
+      this.credentialsOpenId.set(null);
+      this.currentCreds.set(null);
+      this.showPlain.set(false);
+      this.resetPasswordValue = '';
+      return;
+    }
+    this.credentialsOpenId.set(teamId);
+    this.showPlain.set(false);
+    this.resetPasswordValue = '';
+    this.loadingCreds.set(true);
+    this.teamSvc.getCredentials(teamId).subscribe({
+      next: c => { this.currentCreds.set(c); this.loadingCreds.set(false); },
+      error: () => { this.currentCreds.set(null); this.loadingCreds.set(false); }
+    });
+  }
+
+  resetTeamPassword(teamId: string) {
+    const team = this.seasonTeams().find(t => t.id === teamId);
+    if (!team || !this.resetPasswordValue) return;
+    this.saving.set(true);
+    this.teamSvc.updateTeam(teamId, {
+      teamName: team.teamName,
+      shortCode: team.shortCode,
+      themeColour: team.themeColour,
+      ownerDisplayName: team.ownerDisplayName,
+      newPassword: this.resetPasswordValue,
+    }).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.success.set('Password reset!');
+        setTimeout(() => this.success.set(''), 3000);
+        // Refresh credentials view to show the new plaintext password
+        this.teamSvc.getCredentials(teamId).subscribe({ next: c => this.currentCreds.set(c) });
+        this.resetPasswordValue = '';
+      },
+      error: e => { this.error.set(e?.error?.error ?? 'Failed to reset password.'); this.saving.set(false); }
+    });
+  }
+
   loadPreviousTeams(currentId: string) {
     const prev = this.seasons().find(s => s.id !== currentId);
     if (!prev) return;
@@ -302,13 +392,35 @@ export class SeasonsAdminComponent implements OnInit {
 
   startEdit(s: any) {
     this.editingId.set(s.id);
-    this.editForm = { name: s.name, status: s.status, auctionDate: s.auctionDate?.split('T')[0] ?? '' };
+    this.editForm = {
+      name: s.name,
+      status: s.status,
+      auctionDate: s.auctionDate?.split('T')[0] ?? '',
+      seasonStartDate: s.seasonStartDate?.split('T')[0] ?? '',
+      seasonEndDate: s.seasonEndDate?.split('T')[0] ?? '',
+    };
   }
 
   saveEdit(id: string) {
     this.saving.set(true);
-    this.seasonSvc.updateStatus(id, this.editForm.status).subscribe({
-      next: () => { this.seasons.update(l => l.map(s => s.id === id ? { ...s, status: this.editForm.status } : s)); this.editingId.set(null); this.saving.set(false); this.success.set('Updated!'); setTimeout(() => this.success.set(''), 3000); },
+    this.seasonSvc.updateStatus(id, this.editForm.status, {
+      auctionDate: this.editForm.auctionDate || undefined,
+      seasonStartDate: this.editForm.seasonStartDate || undefined,
+      seasonEndDate: this.editForm.seasonEndDate || undefined,
+    }).subscribe({
+      next: () => {
+        this.seasons.update(l => l.map(s => s.id === id ? {
+          ...s,
+          status: this.editForm.status,
+          auctionDate: this.editForm.auctionDate || s.auctionDate,
+          seasonStartDate: this.editForm.seasonStartDate || s.seasonStartDate,
+          seasonEndDate: this.editForm.seasonEndDate || s.seasonEndDate,
+        } : s));
+        this.editingId.set(null);
+        this.saving.set(false);
+        this.success.set('Updated!');
+        setTimeout(() => this.success.set(''), 3000);
+      },
       error: () => { this.error.set('Failed to update.'); this.saving.set(false); }
     });
   }
