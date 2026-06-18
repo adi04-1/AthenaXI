@@ -12,6 +12,7 @@ export class TeamService {
   getTeamById(id: string) { return this.http.get<any>(`${this.api}/teams/${id}`); }
   createTeam(body: any) { return this.http.post<any>(`${this.api}/teams`, body); }
   updateTeam(id: string, body: any) { return this.http.put<any>(`${this.api}/teams/${id}`, body); }
+  getCredentials(teamId: string) { return this.http.get<any>(`${this.api}/teams/${teamId}/credentials`); }
   uploadRetentions(body: any) { return this.http.post<any>(`${this.api}/teams/retentions`, body); }
   deleteRetention(id: string) { return this.http.delete<any>(`${this.api}/teams/retentions/${id}`); }
 }

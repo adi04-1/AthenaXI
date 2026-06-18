@@ -139,6 +139,36 @@ import { NotificationService } from '../../core/services/notification.service';
             </div>
           }
 
+          <!-- Player Sets â€” Shuffle within set, sets stay in fixed order -->
+          <div class="athena-card section-card">
+            <h2 class="section-title">Player Sets</h2>
+            <p class="athena-label" style="margin-bottom:12px">
+              Sets stay in fixed order. Shuffle re-randomizes only the players within a set that haven't been auctioned yet.
+            </p>
+            @if (loadingSets()) {
+              <p class="athena-label">Loading sets...</p>
+            } @else if (sets().length === 0) {
+              <p class="athena-label">No auction order uploaded yet.</p>
+            } @else {
+              <div class="sets-list">
+                @for (set of sets(); track set.auctionSet) {
+                  <div class="set-row">
+                    <div class="set-info">
+                      <span class="set-name">{{ set.setDisplayName }}</span>
+                      <span class="set-counts">
+                        {{ set.pendingCount }} pending ⌛  {{ set.soldCount }} sold 💵 {{ set.unsoldCount }} unsold ❌
+                      </span>
+                    </div>
+                    <button class="shuffle-btn" (click)="shuffleSet(set.auctionSet)"
+                      [disabled]="!set.canShuffle || saving()">
+                      {{ set.canShuffle ? 'Shuffle Set' : 'Locked' }}
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
           <!-- Reminder sender -->
           <div class="athena-card section-card">
             <h2 class="section-title">Send Reminder</h2>
@@ -220,6 +250,14 @@ import { NotificationService } from '../../core/services/notification.service';
 
     .lobby-actions { display: flex; gap: 10px; flex-wrap: wrap; }
     .kickstart-btn { min-width: 200px; }
+    .sets-list { display:flex; flex-direction:column; gap:8px; }
+    .set-row { display:flex; align-items:center; justify-content:space-between; gap:12px; background:rgba(10,31,47,0.6); border-radius:var(--radius-md); padding:12px 16px; border:1px solid rgba(212,175,55,0.08); }
+    .set-info { display:flex; flex-direction:column; gap:3px; }
+    .set-name { font-size:14px; font-weight:700; color:#fff; font-family:var(--font-body); }
+    .set-counts { font-size:11px; color:#777; }
+    .shuffle-btn { font-size:12px; font-weight:700; color:var(--green-soft); background:rgba(45,156,219,0.1); border:1px solid rgba(45,156,219,0.25); border-radius:8px; padding:7px 16px; cursor:pointer; flex-shrink:0; white-space:nowrap; transition:background 0.15s; }
+    .shuffle-btn:hover:not(:disabled) { background:rgba(45,156,219,0.22); }
+    .shuffle-btn:disabled { opacity:0.4; cursor:not-allowed; color:#666; background:rgba(255,255,255,0.04); border-color:rgba(255,255,255,0.08); }
     .live-banner { background: linear-gradient(135deg, rgba(255,59,48,0.1), rgba(30,58,95,0.5)) !important; border: 1px solid rgba(255,59,48,0.3) !important; padding: 20px; margin-bottom: 16px; }
     .no-session-card { text-align: center; padding: 40px; display: flex; flex-direction: column; align-items: center; }
   `]
@@ -236,6 +274,8 @@ export class AuctionLobbyComponent implements OnInit, OnDestroy {
   error            = signal('');
   success          = signal('');
   reminderMsg      = '';
+  sets             = signal<any[]>([]);
+  loadingSets      = signal(false);
   private sessionId = signal<string|null>(null);
   private pollSub?: Subscription;
 
@@ -271,8 +311,12 @@ export class AuctionLobbyComponent implements OnInit, OnDestroy {
       next: (session: any) => {
         this.sessionId.set(session.id);
         this.loadLobby(session.id);
+        this.loadSets(session.id);
         // Poll every 5s
-        this.pollSub = interval(5000).subscribe(() => this.loadLobby(session.id));
+        this.pollSub = interval(5000).subscribe(() => {
+          this.loadLobby(session.id);
+          this.loadSets(session.id);
+        });
       },
       error: () => { this.lobby.set(null); this.loadingLobby.set(false); }
     });
@@ -285,9 +329,35 @@ export class AuctionLobbyComponent implements OnInit, OnDestroy {
     });
   }
 
+  loadSets(sessionId: string) {
+    this.loadingSets.set(true);
+    this.auctionSvc.getSets(sessionId).subscribe({
+      next: (d: any[]) => { this.sets.set(d); this.loadingSets.set(false); },
+      error: () => this.loadingSets.set(false)
+    });
+  }
+
+  shuffleSet(auctionSet: string) {
+    const sid = this.sessionId();
+    if (!sid) return;
+    this.saving.set(true);
+    this.auctionSvc.shuffleSet(sid, auctionSet).subscribe({
+      next: (r: any) => {
+        this.saving.set(false);
+        this.success.set(r?.message ?? 'Set shuffled!');
+        setTimeout(() => this.success.set(''), 3000);
+        this.loadSets(sid);
+      },
+      error: (e: any) => {
+        this.error.set(e?.error?.error ?? 'Failed to shuffle set.');
+        this.saving.set(false);
+      }
+    });
+  }
+
   refresh() {
     const sid = this.sessionId();
-    if (sid) this.loadLobby(sid);
+    if (sid) { this.loadLobby(sid); this.loadSets(sid); }
     else this.loadSeasons();
   }
 
@@ -297,7 +367,7 @@ export class AuctionLobbyComponent implements OnInit, OnDestroy {
     this.saving.set(true); this.error.set('');
     this.auctionSvc.sendInvites(sid).subscribe({
       next: (r: any) => {
-        this.success.set(`��� Invites sent to ${r.count} teams!`);
+        this.success.set(`✅ Invites sent to ${r.count} teams!`);
         this.saving.set(false);
         this.loadLobby(sid);
         setTimeout(() => this.success.set(''), 4000);
@@ -326,13 +396,13 @@ export class AuctionLobbyComponent implements OnInit, OnDestroy {
     if (!sid) return;
     this.saving.set(true);
     this.auctionSvc.startAuction(sid).subscribe({
-      next: () => { this.success.set('��� Auction started!'); this.saving.set(false); this.loadLobby(sid); },
+      next: () => { this.success.set('✅ Auction started!'); this.saving.set(false); this.loadLobby(sid); },
       error: (e: any) => { this.error.set(e?.error?.error ?? 'Failed to start.'); this.saving.set(false); }
     });
   }
 
   invStatusClass(s: string) { return s?.toLowerCase() ?? 'pending'; }
-  invStatusLabel(s: string) { return { Accepted:'✅ Accepted', Pending:'⏳ Pending', Declined:'❌ Declined' }[s] ?? s; }
+  invStatusLabel(s: string) { return { Accepted:'✅ Accepted', Pending:'🕒 Pending', Declined:'❌ Declined' }[s] ?? s; }
   statusBadge(s: string) { const m: any = { Upcoming:'athena-badge-surface', ReadyForAuction:'athena-badge-blue', AuctionPhase:'athena-badge-red', InProgress:'athena-badge-green' }; return m[s] ?? 'athena-badge-surface'; }
   modeLabel(m: string) { return { FreshAuction:'Fresh', AuctionWithRetentions:'Retention', DirectAllocation:'Direct' }[m] ?? m; }
 }

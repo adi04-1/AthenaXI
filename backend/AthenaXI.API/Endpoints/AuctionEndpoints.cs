@@ -680,7 +680,12 @@ public static class AuctionEndpoints
             AthenaXIDbContext db,
             ClaimsPrincipal caller) =>
         {
-            var userId = Guid.Parse(caller.FindFirst("userId")!.Value);
+            var userIdStr = caller.FindFirst("userId")?.Value
+                         ?? caller.FindFirst("sub")?.Value
+                         ?? caller.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (userIdStr is null || !Guid.TryParse(userIdStr, out var userId))
+                return Results.Unauthorized();
 
             var invite = await db.AuctionInvites
                 .Include(i => i.FantasyTeam)
@@ -709,16 +714,23 @@ public static class AuctionEndpoints
             AthenaXIDbContext db,
             ClaimsPrincipal caller) =>
         {
-            var userId = Guid.Parse(caller.FindFirst("userId")!.Value);
+            // Try multiple claim name patterns — defensive against JWT remapping
+            var userIdStr = caller.FindFirst("userId")?.Value
+                         ?? caller.FindFirst("sub")?.Value
+                         ?? caller.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (userIdStr is null || !Guid.TryParse(userIdStr, out var userId))
+                return Results.Unauthorized();
 
             var team = await db.FantasyTeams
                 .FirstOrDefaultAsync(t => t.UserId == userId && t.SeasonId == seasonId);
-            if (team is null) return Results.NotFound(new { error = "No team found." });
+            if (team is null)
+                return Results.NotFound(new { error = $"No team found for userId={userId} seasonId={seasonId}." });
 
             var session = await db.AuctionSessions
                 .FirstOrDefaultAsync(a => a.SeasonId == seasonId);
             if (session is null)
-                return Results.Ok(new { id = (Guid?)null, status = "NoSession", message = "No auction session found for this season. Upload player pool and auction order first." });
+                return Results.Ok(new { id = (Guid?)null, status = "NoSession", message = "No auction session found." });
 
             var invite = await db.AuctionInvites
                 .FirstOrDefaultAsync(i => i.AuctionSessionId == session.Id && i.FantasyTeamId == team.Id);

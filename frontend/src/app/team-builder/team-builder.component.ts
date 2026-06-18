@@ -45,6 +45,18 @@ import { AuthService } from '../core/services/auth.service';
         @if (success()) { <div class="athena-success animate-fade-in">{{ success() }}</div> }
         @if (error()) { <div class="athena-error animate-fade-in">{{ error() }}</div> }
 
+        <!-- Tabs -->
+        <div class="tb-tabs">
+          <button class="tb-tab" [class.active]="activeTab() === 'squad'" (click)="activeTab.set('squad')">
+            Squad
+          </button>
+          <button class="tb-tab" [class.active]="activeTab() === 'auctioned'" (click)="activeTab.set('auctioned')">
+            Auctioned Players
+          </button>
+        </div>
+
+        @if (activeTab() === 'squad') {
+
         <!-- Role assignment notice -->
         @if (!hasCaptain() || !hasVC() || !hasImpact()) {
           <div class="athena-info">
@@ -130,6 +142,53 @@ import { AuthService } from '../core/services/auth.service';
             }
           </div>
         </div>
+
+        } <!-- end @if (activeTab() === 'squad') -->
+
+        @if (activeTab() === 'auctioned') {
+          <div class="auctioned-section">
+            <div class="section-hdr">
+              <span class="athena-subheading">Auctioned Players</span>
+              <span class="athena-badge athena-badge-surface">{{ players().length }}</span>
+            </div>
+
+            @if (players().length === 0) {
+              <div class="athena-card empty-state">
+                <p>No players acquired yet.</p>
+              </div>
+            } @else {
+              <div class="auctioned-list">
+                @for (p of sortedByPrice(); track p.id; let i = $index) {
+                  <div class="auctioned-row athena-card-sm">
+                    <span class="auc-rank">{{ i + 1 }}</span>
+                    <div class="auc-info">
+                      <div class="auc-name-row">
+                        <span class="auc-name">{{ p.player.name }}</span>
+                        @if (p.isCaptain)      { <span class="role-pill captain-pill">C</span> }
+                        @if (p.isViceCaptain)  { <span class="role-pill vc-pill">VC</span> }
+                        @if (p.isImpactPlayer) { <span class="role-pill impact-pill">IP</span> }
+                      </div>
+                      <div class="auc-meta">
+                        <span class="meta-tag">{{ p.player.iplTeam }}</span>
+                        <span class="meta-tag role-{{ p.player.role.toLowerCase() }}">{{ p.player.role }}</span>
+                        @if (p.player.isOverseas) { <span class="meta-tag overseas">OS</span> }
+                        <span class="meta-tag" [class.reserve-tag]="p.slot === 'Reserve'">
+                          {{ p.slot === 'Reserve' ? 'Reserve' : 'Playing XI' }}
+                        </span>
+                      </div>
+                    </div>
+                    <span class="auc-price">Rs. {{ p.purchasedPriceCr }}Cr</span>
+                  </div>
+                }
+              </div>
+
+              <div class="athena-card auctioned-total-card">
+                <span class="atc-label">Total Spent</span>
+                <span class="atc-val">Rs. {{ totalSpent() }}Cr</span>
+              </div>
+            }
+          </div>
+        }
       }
     </div>
   `,
@@ -138,6 +197,25 @@ import { AuthService } from '../core/services/auth.service';
     .empty-state { text-align:center; padding:48px; display:flex; flex-direction:column; align-items:center; gap:10px; }
     .empty-icon-text { font-family:var(--font-timer); font-size:11px; font-weight:900; letter-spacing:0.15em; color:var(--gold); background:rgba(212,175,55,0.1); border:1px solid rgba(212,175,55,0.2); border-radius:20px; padding:5px 14px; }
     .empty-sub { color:#555; font-size:13px; }
+
+    .tb-tabs { display:flex; gap:4px; margin-bottom:16px; border-bottom:1px solid rgba(212,175,55,0.1); }
+    .tb-tab { background:none; border:none; padding:10px 18px; font-family:var(--font-body); font-size:13px; font-weight:700; color:#666; cursor:pointer; border-bottom:2px solid transparent; transition:all 0.15s; }
+    .tb-tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+    .tb-tab:hover:not(.active) { color:#aaa; }
+
+    .auctioned-section { margin-top:4px; }
+    .auctioned-list { display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+    .auctioned-row { display:flex; align-items:center; gap:12px; padding:12px 14px; }
+    .auc-rank { font-family:var(--font-timer); font-size:13px; font-weight:900; color:var(--gold-dark); width:22px; flex-shrink:0; text-align:center; }
+    .auc-info { flex:1; min-width:0; }
+    .auc-name-row { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+    .auc-name { font-size:14px; font-weight:700; color:#fff; font-family:var(--font-body); }
+    .auc-meta { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+    .reserve-tag { color:#777 !important; }
+    .auc-price { font-family:var(--font-timer); font-size:16px; font-weight:900; color:var(--gold); flex-shrink:0; }
+    .auctioned-total-card { margin-top:14px; display:flex; align-items:center; justify-content:space-between; padding:14px 18px; }
+    .atc-label { font-size:13px; color:#888; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; }
+    .atc-val { font-family:var(--font-timer); font-size:22px; font-weight:900; color:var(--gold); }
 
     .budget-card { margin-bottom:16px; }
     .budget-row { display:flex; gap:0; flex-wrap:wrap; }
@@ -208,6 +286,7 @@ export class TeamBuilderComponent implements OnInit {
   team    = signal<any>(null);
   players = signal<any[]>([]);
   loading = signal(true);
+  activeTab = signal<'squad'|'auctioned'>('squad');
   saving  = signal(false);
   success = signal('');
   error   = signal('');
@@ -217,6 +296,8 @@ export class TeamBuilderComponent implements OnInit {
   hasCaptain = computed(() => this.players().some(p => p.isCaptain));
   hasVC      = computed(() => this.players().some(p => p.isViceCaptain));
   hasImpact  = computed(() => this.players().some(p => p.isImpactPlayer));
+  sortedByPrice = computed(() => [...this.players()].sort((a, b) => (b.purchasedPriceCr ?? 0) - (a.purchasedPriceCr ?? 0)));
+  totalSpent    = computed(() => this.players().reduce((sum, p) => sum + (p.purchasedPriceCr ?? 0), 0));
 
   constructor(
     private teamSvc: TeamService,
