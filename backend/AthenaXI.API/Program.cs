@@ -117,8 +117,9 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AthenaXIDbContext>();
     //await db.Database.MigrateAsync();
-    await AppOwnerSeeder.SeedAsync(db);
-    await SeasonSeeder.SeedAsync(db);
+    //await AppOwnerSeeder.SeedAsync(db);
+    //await SeasonSeeder.SeedAsync(db);
+    //only uncomment this when you open a new db!!
 }
 
 // ─── Middleware ───────────────────────────────────────────────────────────────

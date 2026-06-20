@@ -23,4 +23,4 @@ ENV ASPNETCORE_URLS=http://+:10000
 
 EXPOSE 10000
 
-ENTRYPOINT ["dotnet","AthenaXI.API.dll"]
+ENTRYPOINT ["dotnet", "AthenaXI.API.dll", "--urls", "http://0.0.0.0:8080"]
