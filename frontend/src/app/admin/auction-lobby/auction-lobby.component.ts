@@ -839,24 +839,39 @@ export class AuctionLobbyComponent implements OnInit, OnDestroy {
     this.lobby.set(null);
     this.loadingLobby.set(true);
     this.pollSub?.unsubscribe();
-    // Try to get auction session
+    // Summary works regardless of auction status (live, completed, or none yet) â€”
+    // resolved independently via session-any so a finished auction still shows data.
+    this.auctionSvc.getSessionAny(s.id).subscribe({
+      next: (anySession: any) => {
+        if (anySession?.id) {
+          this.loadSummary(s.id, anySession.id);
+        }
+      },
+      error: () => {}
+    });
+
+    // Lobby + Sets panels are live-auction-only concepts (invites, shuffling
+    // pending players) â€” these still depend on a non-Completed session.
     this.auctionSvc.getSession(s.id).subscribe({
       next: (session: any) => {
         this.sessionId.set(session.id);
         this.loadLobby(session.id);
         this.loadSets(session.id);
-        this.loadSummary(s.id, session.id);
         // Poll every 5s
-        this.pollSub = interval(5000).subscribe(() => {
-          this.loadLobby(session.id);
-          this.loadSets(session.id);
-          this.loadSummary(s.id, session.id);
-        });
+        if (session.id != null) {
+          this.pollSub = interval(5000).subscribe(() => {
+            this.loadLobby(session.id);
+            this.loadSets(session.id);
+            this.loadSummary(s.id, session.id);
+          });
+        }
       },
       error: () => {
+        // No live session (e.g. auction already completed) â€” that's fine,
+        // the summary above still loaded independently.
         this.lobby.set(null);
         this.loadingLobby.set(false);
-      },
+      }
     });
   }
 
@@ -895,7 +910,7 @@ export class AuctionLobbyComponent implements OnInit, OnDestroy {
       error: () => {},
     });
   }
-
+  
   summaryTotals() {
     const sold = this.results().filter((r: any) => !r.wentUnsold).length;
     const unsold = this.results().filter((r: any) => r.wentUnsold).length;

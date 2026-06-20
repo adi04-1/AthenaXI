@@ -8,6 +8,7 @@ export class AuctionService {
   constructor(private http: HttpClient) {}
 
   getSession(seasonId: string) { return this.http.get<any>(`${this.api}/auction/session/${seasonId}`); }
+  getSessionAny(seasonId: string) { return this.http.get<any>(`${this.api}/auction/session-any/${seasonId}`); }
   getStandings(seasonId: string) { return this.http.get<any[]>(`${this.api}/auction/standings/${seasonId}`); }
   getBids(slotId: string) { return this.http.get<any[]>(`${this.api}/auction/bids/${slotId}`); }
   getResults(sessionId: string) { return this.http.get<any[]>(`${this.api}/auction/results/${sessionId}`); }

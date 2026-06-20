@@ -109,6 +109,27 @@ public static class AuctionEndpoints
                 current));
         }).AllowAnonymous();
 
+        // ── GET /api/auction/session-any/{seasonId} ───────────────────────────
+        // Resolves a season to its auction session regardless of status —
+        // unlike /session/{seasonId} above (which deliberately excludes
+        // Completed for the live auction room), this is for views that need
+        // historical data after the auction has finished, e.g. the admin
+        // summary panel.
+        group.MapGet("/session-any/{seasonId:guid}", async (
+            Guid seasonId,
+            AthenaXIDbContext db) =>
+        {
+            var session = await db.AuctionSessions
+                .Where(a => a.SeasonId == seasonId)
+                .OrderByDescending(a => a.StartedAt)
+                .FirstOrDefaultAsync();
+
+            if (session is null)
+                return Results.Ok(new { id = (Guid?)null, status = "NoSession" });
+
+            return Results.Ok(new { id = session.Id, status = session.Status.ToString() });
+        }).AllowAnonymous();
+
         // ── GET /api/auction/standings/{seasonId} ─────────────────────────────
         // Live budget + squad standings for big screen
         group.MapGet("/standings/{seasonId:guid}", async (
@@ -821,20 +842,23 @@ public static class AuctionEndpoints
                 (orderValues[i], orderValues[j]) = (orderValues[j], orderValues[i]);
             }
 
-            // Two-phase update — AuctionOrder has a unique constraint, so writing the
-            // permuted values directly can collide mid-transaction with a value still
-            // sitting on another row (e.g. row A: 5→7, row B: 7→5 — if A's update runs
-            // first, "7" temporarily exists on two rows and Postgres throws a unique
-            // violation, surfacing as a 500). Phase 1 moves every row to a guaranteed-
-            // unique negative offset; phase 2 applies the real shuffled values once
-            // there's no possibility of collision.
-            for (int i = 0; i < pendingSlots.Count; i++)
-                pendingSlots[i].AuctionOrder = -(i + 1) - 1000000; // far below any real order value
-            await db.SaveChangesAsync();
+            // Two-phase update via raw SQL — EF's change tracker treats both phases as
+            // one batch even across two SaveChangesAsync calls (it still detects a
+            // circular dependency on the unique index before either hits the DB).
+            // Raw SQL forces real separate round-trips, so phase 1 actually commits
+            // before phase 2 runs.
+            foreach (var slot in pendingSlots)
+            {
+                var tempOrder = -(pendingSlots.IndexOf(slot) + 1) - 1000000;
+                await db.Database.ExecuteSqlInterpolatedAsync(
+                    $"UPDATE \"AuctionPlayerSlots\" SET \"AuctionOrder\" = {tempOrder} WHERE \"Id\" = {slot.Id}");
+            }
 
             for (int i = 0; i < pendingSlots.Count; i++)
-                pendingSlots[i].AuctionOrder = orderValues[i];
-            await db.SaveChangesAsync();
+            {
+                await db.Database.ExecuteSqlInterpolatedAsync(
+                    $"UPDATE \"AuctionPlayerSlots\" SET \"AuctionOrder\" = {orderValues[i]} WHERE \"Id\" = {pendingSlots[i].Id}");
+            }
 
             return Results.Ok(new
             {
