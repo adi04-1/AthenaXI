@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["angular:styles/component:css;c43660997a6ec07fbe1b0906ea500e467d38c0ac92efcb3d57662653a4b33813;C:/Users/Adithya Ramaraj/Documents/GitHub/athenaxi/frontend/src/app/transfers/transfers.component.ts"],
-  "sourcesContent": [".page{padding:16px} .t{color:#C9A84C;font-size:22px;font-weight:800} .s{color:#666}"],
-  "mappings": ";AAAA,CAAC;AAAK,WAAQ;AAAI;AAAE,CAAC;AAAE,SAAM;AAAQ,aAAU;AAAK,eAAY;AAAG;AAAE,CAAC;AAAE,SAAM;AAAI;",
-  "names": []
-}
