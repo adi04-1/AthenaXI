@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://athenaxi-api.onrender.com/api'
+  apiUrl: 'https://athenaxi.onrender.com'
 };
