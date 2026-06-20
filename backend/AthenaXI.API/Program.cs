@@ -84,7 +84,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular", policy =>
         policy.WithOrigins(
                 "http://localhost:4200",
-                "https://YOURUSERNAME.github.io")
+                "https://adi04-1.github.io")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials());
