@@ -11,7 +11,7 @@ public static class AppOwnerSeeder
     {
         if (await db.Users.AnyAsync(u => u.Role == UserRole.AppOwner)) return;
 
-        const string password = "WrathOfGod@2026!";
+        const string password = "AngelOfDeath@2026#";
 
         var owner = new User
         {
