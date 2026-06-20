@@ -21,18 +21,30 @@ import { NotificationService } from '../../core/services/notification.service';
         <button class="athena-btn athena-btn-secondary" (click)="refresh()">🔄 Refresh</button>
       </div>
 
-      @if (error()) { <div class="athena-error animate-fade-in">{{ error() }}</div> }
-      @if (success()) { <div class="athena-success animate-fade-in">{{ success() }}</div> }
+      @if (error()) {
+        <div class="athena-error animate-fade-in">{{ error() }}</div>
+      }
+      @if (success()) {
+        <div class="athena-success animate-fade-in">{{ success() }}</div>
+      }
 
       <!-- Today's Auctions Banner -->
       @if (todayAuctions().length > 0) {
         <div class="today-banner animate-fade-in">
           <div class="today-header">
-            <span class="athena-live-dot" style="font-family:var(--font-body);font-size:13px;font-weight:700;color:var(--red-live)">Auction Day Today</span>
+            <span
+              class="athena-live-dot"
+              style="font-family:var(--font-body);font-size:13px;font-weight:700;color:var(--red-live)"
+              >Auction Day Today</span
+            >
           </div>
           <div class="today-list">
             @for (s of todayAuctions(); track s.id) {
-              <div class="today-card" (click)="selectSeason(s)" [class.selected]="selectedSeasonId() === s.id">
+              <div
+                class="today-card"
+                (click)="selectSeason(s)"
+                [class.selected]="selectedSeasonId() === s.id"
+              >
                 <div class="today-card-main">
                   <span class="today-name">{{ s.name }}</span>
                   <span class="athena-badge" [ngClass]="statusBadge(s.status)">{{ s.status }}</span>
@@ -52,15 +64,21 @@ import { NotificationService } from '../../core/services/notification.service';
         } @else {
           <div class="season-pills">
             @for (s of auctionableSeasons(); track s.id) {
-              <button class="season-pill"
+              <button
+                class="season-pill"
                 [class.active]="selectedSeasonId() === s.id"
-                (click)="selectSeason(s)">
+                (click)="selectSeason(s)"
+              >
                 <span>{{ s.name }}</span>
-                <span class="athena-badge athena-badge-surface" style="font-size:10px">{{ modeLabel(s.mode) }}</span>
+                <span class="athena-badge athena-badge-surface" style="font-size:10px">{{
+                  modeLabel(s.mode)
+                }}</span>
               </button>
             }
             @if (auctionableSeasons().length === 0) {
-              <p class="athena-label">No seasons ready for auction. Create a season and upload players first.</p>
+              <p class="athena-label">
+                No seasons ready for auction. Create a season and upload players first.
+              </p>
             }
           </div>
         }
@@ -69,7 +87,6 @@ import { NotificationService } from '../../core/services/notification.service';
       <!-- Lobby Panel — shown when season selected -->
       @if (selectedSeasonId() && lobby()) {
         <div class="lobby-panel animate-fade-in">
-
           <!-- Acceptance board -->
           <div class="athena-card section-card">
             <div class="lobby-header">
@@ -85,10 +102,16 @@ import { NotificationService } from '../../core/services/notification.service';
             @if (lobby().invites?.length > 0) {
               <div class="invite-list">
                 @for (inv of lobby().invites; track inv.inviteId) {
-                  <div class="invite-row" [class.accepted]="inv.status === 'Accepted'" [class.declined]="inv.status === 'Declined'"
-                    [style.border-left-color]="inv.themeColour">
+                  <div
+                    class="invite-row"
+                    [class.accepted]="inv.status === 'Accepted'"
+                    [class.declined]="inv.status === 'Declined'"
+                    [style.border-left-color]="inv.themeColour"
+                  >
                     <div class="invite-team">
-                      <span class="inv-code" [style.color]="inv.themeColour">{{ inv.shortCode }}</span>
+                      <span class="inv-code" [style.color]="inv.themeColour">{{
+                        inv.shortCode
+                      }}</span>
                       <span class="inv-name">{{ inv.teamName }}</span>
                     </div>
                     <div class="invite-right">
@@ -96,24 +119,34 @@ import { NotificationService } from '../../core/services/notification.service';
                         {{ invStatusLabel(inv.status) }}
                       </span>
                       @if (inv.respondedAt) {
-                        <span class="athena-label">{{ inv.respondedAt | date:'shortTime' }}</span>
+                        <span class="athena-label">{{ inv.respondedAt | date: 'shortTime' }}</span>
                       }
                     </div>
                   </div>
                 }
               </div>
             } @else {
-              <p class="athena-label" style="margin-top:12px">No invites sent yet. Send invites below.</p>
+              <p class="athena-label" style="margin-top:12px">
+                No invites sent yet. Send invites below.
+              </p>
             }
 
             <!-- Invite actions -->
             <div class="lobby-actions">
-              <button class="athena-btn athena-btn-secondary" (click)="sendInvites()" [disabled]="saving()">
+              <button
+                class="athena-btn athena-btn-secondary"
+                (click)="sendInvites()"
+                [disabled]="saving()"
+              >
                 {{ saving() ? 'Sending...' : '🔄 Send / Resend Invites' }}
               </button>
-              <button class="athena-btn athena-btn-primary kickstart-btn"
-                [disabled]="lobby().acceptedCount < 1 || saving() || lobby().auctionStatus === 'InProgress'"
-                (click)="startAuction()">
+              <button
+                class="athena-btn athena-btn-primary kickstart-btn"
+                [disabled]="
+                  lobby().acceptedCount < 1 || saving() || lobby().auctionStatus === 'InProgress'
+                "
+                (click)="startAuction()"
+              >
                 @if (lobby().auctionStatus === 'InProgress') {
                   🟢 Auction Live
                 } @else {
@@ -132,7 +165,11 @@ import { NotificationService } from '../../core/services/notification.service';
                   <div class="athena-heading" style="font-size:18px">Auction is LIVE</div>
                   <p class="athena-label">{{ lobby().acceptedCount }} teams are in the room</p>
                 </div>
-                <a routerLink="/auction" class="athena-btn athena-btn-primary" style="margin-left:auto;text-decoration:none">
+                <a
+                  routerLink="/auction"
+                  class="athena-btn athena-btn-primary"
+                  style="margin-left:auto;text-decoration:none"
+                >
                   Enter Auction Room →
                 </a>
               </div>
@@ -143,7 +180,8 @@ import { NotificationService } from '../../core/services/notification.service';
           <div class="athena-card section-card">
             <h2 class="section-title">Player Sets</h2>
             <p class="athena-label" style="margin-bottom:12px">
-              Sets stay in fixed order. Shuffle re-randomizes only the players within a set that haven't been auctioned yet.
+              Sets stay in fixed order. Shuffle re-randomizes only the players within a set that
+              haven't been auctioned yet.
             </p>
             @if (loadingSets()) {
               <p class="athena-label">Loading sets...</p>
@@ -156,11 +194,15 @@ import { NotificationService } from '../../core/services/notification.service';
                     <div class="set-info">
                       <span class="set-name">{{ set.setDisplayName }}</span>
                       <span class="set-counts">
-                        {{ set.pendingCount }} pending ⌛  {{ set.soldCount }} sold 💵 {{ set.unsoldCount }} unsold ❌
+                        {{ set.pendingCount }} pending ⌛ {{ set.soldCount }} sold 💵
+                        {{ set.unsoldCount }} unsold ❌
                       </span>
                     </div>
-                    <button class="shuffle-btn" (click)="shuffleSet(set.auctionSet)"
-                      [disabled]="!set.canShuffle || saving()">
+                    <button
+                      class="shuffle-btn"
+                      (click)="shuffleSet(set.auctionSet)"
+                      [disabled]="!set.canShuffle || saving()"
+                    >
                       {{ set.canShuffle ? 'Shuffle Set' : 'Locked' }}
                     </button>
                   </div>
@@ -172,17 +214,25 @@ import { NotificationService } from '../../core/services/notification.service';
           <!-- Reminder sender -->
           <div class="athena-card section-card">
             <h2 class="section-title">Send Reminder</h2>
-            <p class="athena-label" style="margin-bottom:12px">Send a custom reminder to pending teams</p>
+            <p class="athena-label" style="margin-bottom:12px">
+              Send a custom reminder to pending teams
+            </p>
             <div class="athena-field" style="margin-bottom:12px">
               <label class="athena-field-label">Message</label>
-              <input class="athena-input" [(ngModel)]="reminderMsg"
-                placeholder="Auction starts in 30 minutes! Please accept the invite." />
+              <input
+                class="athena-input"
+                [(ngModel)]="reminderMsg"
+                placeholder="Auction starts in 30 minutes! Please accept the invite."
+              />
             </div>
-            <button class="athena-btn athena-btn-secondary" (click)="sendReminder()" [disabled]="!reminderMsg || saving()">
+            <button
+              class="athena-btn athena-btn-secondary"
+              (click)="sendReminder()"
+              [disabled]="!reminderMsg || saving()"
+            >
               🕒 Send to Pending Teams
             </button>
           </div>
-
         </div>
       } @else if (selectedSeasonId() && !lobby() && loadingLobby()) {
         <div class="athena-card section-card">
@@ -192,112 +242,595 @@ import { NotificationService } from '../../core/services/notification.service';
         <!-- No auction session yet -->
         <div class="athena-card section-card no-session-card animate-fade-in">
           <span style="font-size:40px">❌</span>
-          <h3 style="color:#fff;font-family:var(--font-body);font-weight:700;margin:12px 0 6px">No Auction Session Yet</h3>
-          <p class="athena-label">Upload the player pool and auction order first from the Player Upload section.</p>
-          <a routerLink="/admin/players" class="athena-btn athena-btn-secondary" style="margin-top:16px;text-decoration:none;display:inline-block">
+          <h3 style="color:#fff;font-family:var(--font-body);font-weight:700;margin:12px 0 6px">
+            No Auction Session Yet
+          </h3>
+          <p class="athena-label">
+            Upload the player pool and auction order first from the Player Upload section.
+          </p>
+          <a
+            routerLink="/admin/players"
+            class="athena-btn athena-btn-secondary"
+            style="margin-top:16px;text-decoration:none;display:inline-block"
+          >
             → Go to Player Upload
           </a>
         </div>
       }
 
+      <!-- Auction Summary â€” live running totals across all teams -->
+      <div class="athena-card section-card">
+        <h2 class="section-title">Auction Summary</h2>
+        <p class="athena-label" style="margin-bottom:12px">
+          Live totals updates automatically while the auction runs.
+        </p>
+        @if (loadingSummary()) {
+          <p class="athena-label">Loading summary...</p>
+        } @else if (standings().length === 0) {
+          <p class="athena-label">No teams to summarize yet.</p>
+        } @else {
+          <div class="summary-totals-row">
+            <div class="summary-stat">
+              <span class="ss-val">{{ summaryTotals().sold }}</span
+              ><span class="ss-lbl">Sold</span>
+            </div>
+            <div class="summary-stat">
+              <span class="ss-val">{{ summaryTotals().unsold }}</span
+              ><span class="ss-lbl">Unsold</span>
+            </div>
+            <div class="summary-stat">
+              <span class="ss-val">{{ summaryTotals().pending }}</span
+              ><span class="ss-lbl">Pending</span>
+            </div>
+            <div class="summary-stat">
+              <span class="ss-val">Rs. {{ summaryTotals().totalSpent }}Cr</span
+              ><span class="ss-lbl">Total Spent</span>
+            </div>
+          </div>
+          <div class="summary-team-list">
+            @for (t of standings(); track t.teamId) {
+              <div class="summary-team-row" [style.border-left-color]="t.themeColour">
+                <span class="st-code" [style.color]="t.themeColour">{{ t.shortCode }}</span>
+                <span class="st-name">{{ t.teamName }}</span>
+                <span class="st-players">{{ t.playersAcquired }} players</span>
+                <span class="st-budget" [class.low]="t.budgetRemainingCr < 10"
+                  >Rs. {{ t.budgetRemainingCr }}Cr left</span
+                >
+              </div>
+            }
+          </div>
+
+          <!-- Players Auctioned â€” chronological order, sold + unsold -->
+          <div class="auctioned-order-block">
+            <div class="aob-title">Players Auctioned (In Order)</div>
+            @if (results().length === 0) {
+              <p class="athena-label" style="margin-top:6px">No players resolved yet.</p>
+            } @else {
+              <div class="auctioned-order-list">
+                @for (r of results(); track r.playerId; let i = $index) {
+                  <div class="aol-row" [class.aol-unsold]="r.wentUnsold">
+                    <span class="aol-num">{{ i + 1 }}</span>
+                    <div class="aol-info">
+                      <div class="aol-name-row">
+                        <span class="aol-name">{{ r.playerName }}</span>
+                        <span class="aol-tag">{{ r.iplTeam }}</span>
+                        <span class="aol-tag aol-role">{{ r.role }}</span>
+                        @if (r.wasRtm) {
+                          <span class="aol-tag aol-rtm">RTM</span>
+                        }
+                      </div>
+                      @if (!r.wentUnsold) {
+                        <div class="aol-sold-to">
+                          Sold to <strong>{{ r.winningTeamName }}</strong> ({{ r.winningTeamCode }})
+                        </div>
+                      } @else {
+                        <div class="aol-sold-to aol-unsold-text">Went unsold</div>
+                      }
+                    </div>
+                    <span class="aol-price" [class.aol-price-unsold]="r.wentUnsold">
+                      {{ r.wentUnsold ? 'â€”' : 'Rs. ' + r.finalPriceCr + 'Cr' }}
+                    </span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
     </div>
   `,
-  styles: [`
-    .admin-page { padding: 28px 24px; max-width: 800px; }
-    .admin-page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
-    .section-card { padding: 20px; margin-bottom: 16px; }
-    .section-title { font-family: var(--font-body); font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 14px; }
+  styles: [
+    `
+      .admin-page {
+        padding: 28px 24px;
+        max-width: 800px;
+      }
+      .admin-page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 24px;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .section-card {
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+      .section-title {
+        font-family: var(--font-body);
+        font-size: 15px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 14px;
+      }
 
-    .today-banner {
-      background: linear-gradient(135deg, rgba(255,59,48,0.08), rgba(30,58,95,0.4));
-      border: 1px solid rgba(255,59,48,0.25);
-      border-radius: var(--radius-lg);
-      padding: 16px 20px;
-      margin-bottom: 16px;
-    }
-    .today-header { margin-bottom: 12px; }
-    .today-list { display: flex; flex-direction: column; gap: 8px; }
-    .today-card { background: rgba(10,31,47,0.6); border-radius: var(--radius-md); padding: 12px 16px; cursor: pointer; border: 1px solid rgba(255,59,48,0.15); transition: all 0.15s; }
-    .today-card:hover, .today-card.selected { border-color: var(--red-live); background: rgba(255,59,48,0.08); }
-    .today-card-main { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
-    .today-name { font-family: var(--font-body); font-size: 14px; font-weight: 700; color: #fff; }
+      .today-banner {
+        background: linear-gradient(135deg, rgba(255, 59, 48, 0.08), rgba(30, 58, 95, 0.4));
+        border: 1px solid rgba(255, 59, 48, 0.25);
+        border-radius: var(--radius-lg);
+        padding: 16px 20px;
+        margin-bottom: 16px;
+      }
+      .today-header {
+        margin-bottom: 12px;
+      }
+      .today-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .today-card {
+        background: rgba(10, 31, 47, 0.6);
+        border-radius: var(--radius-md);
+        padding: 12px 16px;
+        cursor: pointer;
+        border: 1px solid rgba(255, 59, 48, 0.15);
+        transition: all 0.15s;
+      }
+      .today-card:hover,
+      .today-card.selected {
+        border-color: var(--red-live);
+        background: rgba(255, 59, 48, 0.08);
+      }
+      .today-card-main {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 4px;
+      }
+      .today-name {
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+      }
 
-    .season-pills { display: flex; gap: 8px; flex-wrap: wrap; }
-    .season-pill { background: rgba(10,31,47,0.6); border: 1px solid rgba(212,175,55,0.1); border-radius: var(--radius-xl); padding: 8px 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: var(--font-body); font-size: 13px; font-weight: 600; color: #aaa; transition: all 0.15s; }
-    .season-pill:hover { border-color: rgba(212,175,55,0.3); color: #fff; }
-    .season-pill.active { background: rgba(212,175,55,0.1); border-color: var(--gold); color: var(--gold); }
+      .season-pills {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .season-pill {
+        background: rgba(10, 31, 47, 0.6);
+        border: 1px solid rgba(212, 175, 55, 0.1);
+        border-radius: var(--radius-xl);
+        padding: 8px 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-body);
+        font-size: 13px;
+        font-weight: 600;
+        color: #aaa;
+        transition: all 0.15s;
+      }
+      .season-pill:hover {
+        border-color: rgba(212, 175, 55, 0.3);
+        color: #fff;
+      }
+      .season-pill.active {
+        background: rgba(212, 175, 55, 0.1);
+        border-color: var(--gold);
+        color: var(--gold);
+      }
 
-    .lobby-panel { display: flex; flex-direction: column; gap: 0; }
-    .lobby-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-    .acceptance-stats { display: flex; gap: 8px; flex-wrap: wrap; }
-    .stat-chip { font-family: var(--font-body); font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
-    .stat-chip.green { background: rgba(0,200,83,0.12); color: var(--green-cricket); }
-    .stat-chip.yellow { background: rgba(212,175,55,0.12); color: var(--gold); }
-    .stat-chip.red { background: rgba(255,59,48,0.12); color: var(--red-live); }
+      .lobby-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .lobby-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+      .acceptance-stats {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .stat-chip {
+        font-family: var(--font-body);
+        font-size: 12px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 20px;
+      }
+      .stat-chip.green {
+        background: rgba(0, 200, 83, 0.12);
+        color: var(--green-cricket);
+      }
+      .stat-chip.yellow {
+        background: rgba(212, 175, 55, 0.12);
+        color: var(--gold);
+      }
+      .stat-chip.red {
+        background: rgba(255, 59, 48, 0.12);
+        color: var(--red-live);
+      }
 
-    .invite-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-    .invite-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(10,31,47,0.6); border-left: 3px solid #333; border-radius: 0 var(--radius-md) var(--radius-md) 0; transition: all 0.2s; }
-    .invite-row.accepted { background: rgba(0,200,83,0.06); border-left-color: var(--green-cricket) !important; }
-    .invite-row.declined { background: rgba(255,59,48,0.06); border-left-color: var(--red-live) !important; }
-    .invite-team { display: flex; align-items: center; gap: 10px; }
-    .inv-code { font-size: 13px; font-weight: 800; min-width: 28px; }
-    .inv-name { font-family: var(--font-body); font-size: 14px; font-weight: 600; color: #fff; }
-    .invite-right { display: flex; align-items: center; gap: 10px; }
-    .invite-status-badge { font-family: var(--font-body); font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 10px; }
-    .invite-status-badge.accepted { background: rgba(0,200,83,0.15); color: var(--green-cricket); }
-    .invite-status-badge.pending { background: rgba(212,175,55,0.12); color: var(--gold); }
-    .invite-status-badge.declined { background: rgba(255,59,48,0.12); color: var(--red-live); }
+      .invite-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .invite-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        background: rgba(10, 31, 47, 0.6);
+        border-left: 3px solid #333;
+        border-radius: 0 var(--radius-md) var(--radius-md) 0;
+        transition: all 0.2s;
+      }
+      .invite-row.accepted {
+        background: rgba(0, 200, 83, 0.06);
+        border-left-color: var(--green-cricket) !important;
+      }
+      .invite-row.declined {
+        background: rgba(255, 59, 48, 0.06);
+        border-left-color: var(--red-live) !important;
+      }
+      .invite-team {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .inv-code {
+        font-size: 13px;
+        font-weight: 800;
+        min-width: 28px;
+      }
+      .inv-name {
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 600;
+        color: #fff;
+      }
+      .invite-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .invite-status-badge {
+        font-family: var(--font-body);
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 10px;
+      }
+      .invite-status-badge.accepted {
+        background: rgba(0, 200, 83, 0.15);
+        color: var(--green-cricket);
+      }
+      .invite-status-badge.pending {
+        background: rgba(212, 175, 55, 0.12);
+        color: var(--gold);
+      }
+      .invite-status-badge.declined {
+        background: rgba(255, 59, 48, 0.12);
+        color: var(--red-live);
+      }
 
-    .lobby-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-    .kickstart-btn { min-width: 200px; }
-    .sets-list { display:flex; flex-direction:column; gap:8px; }
-    .set-row { display:flex; align-items:center; justify-content:space-between; gap:12px; background:rgba(10,31,47,0.6); border-radius:var(--radius-md); padding:12px 16px; border:1px solid rgba(212,175,55,0.08); }
-    .set-info { display:flex; flex-direction:column; gap:3px; }
-    .set-name { font-size:14px; font-weight:700; color:#fff; font-family:var(--font-body); }
-    .set-counts { font-size:11px; color:#777; }
-    .shuffle-btn { font-size:12px; font-weight:700; color:var(--green-soft); background:rgba(45,156,219,0.1); border:1px solid rgba(45,156,219,0.25); border-radius:8px; padding:7px 16px; cursor:pointer; flex-shrink:0; white-space:nowrap; transition:background 0.15s; }
-    .shuffle-btn:hover:not(:disabled) { background:rgba(45,156,219,0.22); }
-    .shuffle-btn:disabled { opacity:0.4; cursor:not-allowed; color:#666; background:rgba(255,255,255,0.04); border-color:rgba(255,255,255,0.08); }
-    .live-banner { background: linear-gradient(135deg, rgba(255,59,48,0.1), rgba(30,58,95,0.5)) !important; border: 1px solid rgba(255,59,48,0.3) !important; padding: 20px; margin-bottom: 16px; }
-    .no-session-card { text-align: center; padding: 40px; display: flex; flex-direction: column; align-items: center; }
-  `]
+      .lobby-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .kickstart-btn {
+        min-width: 200px;
+      }
+      .sets-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .summary-totals-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+      }
+      .summary-stat {
+        flex: 1;
+        min-width: 90px;
+        background: rgba(10, 31, 47, 0.6);
+        border-radius: var(--radius-md);
+        padding: 12px;
+        text-align: center;
+        border: 1px solid rgba(212, 175, 55, 0.08);
+      }
+      .ss-val {
+        display: block;
+        font-family: var(--font-timer);
+        font-size: 20px;
+        font-weight: 900;
+        color: var(--gold);
+      }
+      .ss-lbl {
+        display: block;
+        font-size: 10px;
+        color: #777;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-top: 2px;
+      }
+      .summary-team-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .summary-team-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(10, 31, 47, 0.5);
+        border-left: 3px solid;
+        border-radius: 0 var(--radius-md) var(--radius-md) 0;
+        padding: 9px 14px;
+      }
+      .st-code {
+        font-size: 12px;
+        font-weight: 900;
+        flex-shrink: 0;
+      }
+      .st-name {
+        flex: 1;
+        font-size: 13px;
+        font-weight: 600;
+        color: #fff;
+      }
+      .st-players {
+        font-size: 11px;
+        color: #888;
+      }
+      .st-budget {
+        font-family: var(--font-timer);
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--green-cricket);
+      }
+      .st-budget.low {
+        color: var(--red-live);
+      }
+      .auctioned-order-block {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(212, 175, 55, 0.1);
+      }
+      .aob-title {
+        font-family: var(--font-timer);
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        color: var(--gold-dark);
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+      .auctioned-order-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-height: 420px;
+        overflow-y: auto;
+      }
+      .aol-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(10, 31, 47, 0.5);
+        border-radius: var(--radius-md);
+        padding: 9px 12px;
+        border: 1px solid rgba(212, 175, 55, 0.06);
+      }
+      .aol-row.aol-unsold {
+        background: rgba(255, 59, 48, 0.04);
+        border-color: rgba(255, 59, 48, 0.1);
+      }
+      .aol-num {
+        font-family: var(--font-timer);
+        font-size: 12px;
+        font-weight: 900;
+        color: var(--gold-dark);
+        width: 22px;
+        flex-shrink: 0;
+        text-align: center;
+      }
+      .aol-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .aol-name-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 2px;
+      }
+      .aol-name {
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+      }
+      .aol-tag {
+        font-size: 10px;
+        font-weight: 700;
+        color: #888;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 1px 7px;
+        border-radius: 8px;
+      }
+      .aol-role {
+        color: var(--green-soft);
+      }
+      .aol-rtm {
+        color: var(--red-live);
+        background: rgba(255, 59, 48, 0.1);
+      }
+      .aol-sold-to {
+        font-size: 11px;
+        color: #777;
+      }
+      .aol-sold-to strong {
+        color: #ccc;
+      }
+      .aol-unsold-text {
+        color: var(--red-live);
+      }
+      .aol-price {
+        font-family: var(--font-timer);
+        font-size: 14px;
+        font-weight: 900;
+        color: var(--gold);
+        flex-shrink: 0;
+      }
+      .aol-price-unsold {
+        color: #555;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .set-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        background: rgba(10, 31, 47, 0.6);
+        border-radius: var(--radius-md);
+        padding: 12px 16px;
+        border: 1px solid rgba(212, 175, 55, 0.08);
+      }
+      .set-info {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .set-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+        font-family: var(--font-body);
+      }
+      .set-counts {
+        font-size: 11px;
+        color: #777;
+      }
+      .shuffle-btn {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--green-soft);
+        background: rgba(45, 156, 219, 0.1);
+        border: 1px solid rgba(45, 156, 219, 0.25);
+        border-radius: 8px;
+        padding: 7px 16px;
+        cursor: pointer;
+        flex-shrink: 0;
+        white-space: nowrap;
+        transition: background 0.15s;
+      }
+      .shuffle-btn:hover:not(:disabled) {
+        background: rgba(45, 156, 219, 0.22);
+      }
+      .shuffle-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        color: #666;
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+      .live-banner {
+        background: linear-gradient(
+          135deg,
+          rgba(255, 59, 48, 0.1),
+          rgba(30, 58, 95, 0.5)
+        ) !important;
+        border: 1px solid rgba(255, 59, 48, 0.3) !important;
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+      .no-session-card {
+        text-align: center;
+        padding: 40px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+    `,
+  ],
 })
 export class AuctionLobbyComponent implements OnInit, OnDestroy {
-  seasons          = signal<any[]>([]);
+  seasons = signal<any[]>([]);
   auctionableSeasons = signal<any[]>([]);
-  todayAuctions    = signal<any[]>([]);
-  selectedSeasonId = signal<string|null>(null);
-  lobby            = signal<any>(null);
-  loadingSeasons   = signal(true);
-  loadingLobby     = signal(false);
-  saving           = signal(false);
-  error            = signal('');
-  success          = signal('');
-  reminderMsg      = '';
-  sets             = signal<any[]>([]);
-  loadingSets      = signal(false);
-  private sessionId = signal<string|null>(null);
+  todayAuctions = signal<any[]>([]);
+  selectedSeasonId = signal<string | null>(null);
+  lobby = signal<any>(null);
+  loadingSeasons = signal(true);
+  loadingLobby = signal(false);
+  saving = signal(false);
+  error = signal('');
+  success = signal('');
+  reminderMsg = '';
+  sets = signal<any[]>([]);
+  loadingSets = signal(false);
+  standings = signal<any[]>([]);
+  results = signal<any[]>([]);
+  loadingSummary = signal(false);
+  private sessionId = signal<string | null>(null);
   private pollSub?: Subscription;
 
   constructor(
     private seasonSvc: SeasonService,
     private auctionSvc: AuctionService,
-    private notifSvc: NotificationService
+    private notifSvc: NotificationService,
   ) {}
 
-  ngOnInit() { this.loadSeasons(); }
-  ngOnDestroy() { this.pollSub?.unsubscribe(); }
+  ngOnInit() {
+    this.loadSeasons();
+  }
+  ngOnDestroy() {
+    this.pollSub?.unsubscribe();
+  }
 
   loadSeasons() {
     this.seasonSvc.getAll().subscribe({
       next: (d: any[]) => {
         this.seasons.set(d);
         const today = new Date().toDateString();
-        this.todayAuctions.set(d.filter((s: any) => s.auctionDate && new Date(s.auctionDate).toDateString() === today));
-        this.auctionableSeasons.set(d.filter((s: any) => ['Upcoming','ReadyForAuction','AuctionPhase'].includes(s.status)));
+        this.todayAuctions.set(
+          d.filter((s: any) => s.auctionDate && new Date(s.auctionDate).toDateString() === today),
+        );
+        this.auctionableSeasons.set(
+          d.filter((s: any) => ['Upcoming', 'ReadyForAuction', 'AuctionPhase'].includes(s.status)),
+        );
         this.loadingSeasons.set(false);
       },
-      error: () => this.loadingSeasons.set(false)
+      error: () => this.loadingSeasons.set(false),
     });
   }
 
@@ -312,29 +845,65 @@ export class AuctionLobbyComponent implements OnInit, OnDestroy {
         this.sessionId.set(session.id);
         this.loadLobby(session.id);
         this.loadSets(session.id);
+        this.loadSummary(s.id, session.id);
         // Poll every 5s
         this.pollSub = interval(5000).subscribe(() => {
           this.loadLobby(session.id);
           this.loadSets(session.id);
+          this.loadSummary(s.id, session.id);
         });
       },
-      error: () => { this.lobby.set(null); this.loadingLobby.set(false); }
+      error: () => {
+        this.lobby.set(null);
+        this.loadingLobby.set(false);
+      },
     });
   }
 
   loadLobby(sessionId: string) {
     this.auctionSvc.getLobby(sessionId).subscribe({
-      next: (d: any) => { this.lobby.set(d); this.loadingLobby.set(false); },
-      error: () => this.loadingLobby.set(false)
+      next: (d: any) => {
+        this.lobby.set(d);
+        this.loadingLobby.set(false);
+      },
+      error: () => this.loadingLobby.set(false),
     });
   }
 
   loadSets(sessionId: string) {
     this.loadingSets.set(true);
     this.auctionSvc.getSets(sessionId).subscribe({
-      next: (d: any[]) => { this.sets.set(d); this.loadingSets.set(false); },
-      error: () => this.loadingSets.set(false)
+      next: (d: any[]) => {
+        this.sets.set(d);
+        this.loadingSets.set(false);
+      },
+      error: () => this.loadingSets.set(false),
     });
+  }
+
+  loadSummary(seasonId: string, sessionId: string) {
+    this.loadingSummary.set(true);
+    this.auctionSvc.getStandings(seasonId).subscribe({
+      next: (d: any[]) => {
+        this.standings.set(d);
+        this.loadingSummary.set(false);
+      },
+      error: () => this.loadingSummary.set(false),
+    });
+    this.auctionSvc.getResults(sessionId).subscribe({
+      next: (d: any[]) => this.results.set(d),
+      error: () => {},
+    });
+  }
+
+  summaryTotals() {
+    const sold = this.results().filter((r: any) => !r.wentUnsold).length;
+    const unsold = this.results().filter((r: any) => r.wentUnsold).length;
+    const pending = this.sets().reduce((sum: number, s: any) => sum + (s.pendingCount ?? 0), 0);
+    const totalSpent = this.results()
+      .filter((r: any) => !r.wentUnsold)
+      .reduce((sum: number, r: any) => sum + (r.finalPriceCr ?? 0), 0);
+    return { sold, unsold, pending, totalSpent };
   }
 
   shuffleSet(auctionSet: string) {
@@ -351,20 +920,25 @@ export class AuctionLobbyComponent implements OnInit, OnDestroy {
       error: (e: any) => {
         this.error.set(e?.error?.error ?? 'Failed to shuffle set.');
         this.saving.set(false);
-      }
+      },
     });
   }
 
   refresh() {
     const sid = this.sessionId();
-    if (sid) { this.loadLobby(sid); this.loadSets(sid); }
-    else this.loadSeasons();
+    const seasonId = this.selectedSeasonId();
+    if (sid && seasonId) {
+      this.loadLobby(sid);
+      this.loadSets(sid);
+      this.loadSummary(seasonId, sid);
+    } else this.loadSeasons();
   }
 
   sendInvites() {
     const sid = this.sessionId();
     if (!sid) return;
-    this.saving.set(true); this.error.set('');
+    this.saving.set(true);
+    this.error.set('');
     this.auctionSvc.sendInvites(sid).subscribe({
       next: (r: any) => {
         this.success.set(`✅ Invites sent to ${r.count} teams!`);
@@ -372,7 +946,10 @@ export class AuctionLobbyComponent implements OnInit, OnDestroy {
         this.loadLobby(sid);
         setTimeout(() => this.success.set(''), 4000);
       },
-      error: (e: any) => { this.error.set(e?.error?.error ?? 'Failed to send invites.'); this.saving.set(false); }
+      error: (e: any) => {
+        this.error.set(e?.error?.error ?? 'Failed to send invites.');
+        this.saving.set(false);
+      },
     });
   }
 
@@ -382,13 +959,37 @@ export class AuctionLobbyComponent implements OnInit, OnDestroy {
     // Send to pending teams only
     const pending = this.lobby()?.invites?.filter((i: any) => i.status === 'Pending') ?? [];
     const sends = pending.map((i: any) =>
-      this.notifSvc.sendNotification({ userId: i.userId, title: '⏰ Auction Reminder', body: this.reminderMsg, type: 'AuctionStartingSoon' })
+      this.notifSvc.sendNotification({
+        userId: i.userId,
+        title: '⏰ Auction Reminder',
+        body: this.reminderMsg,
+        type: 'AuctionStartingSoon',
+      }),
     );
-    if (sends.length === 0) { this.success.set('No pending teams to remind.'); this.saving.set(false); return; }
-    this.notifSvc.sendNotification({ userId: null, title: '⏰ Auction Reminder', body: this.reminderMsg, type: 'AuctionStartingSoon' }).subscribe({
-      next: () => { this.success.set(`Reminder sent to ${pending.length} pending teams!`); this.reminderMsg = ''; this.saving.set(false); setTimeout(() => this.success.set(''), 4000); },
-      error: () => { this.error.set('Failed to send reminder.'); this.saving.set(false); }
-    });
+    if (sends.length === 0) {
+      this.success.set('No pending teams to remind.');
+      this.saving.set(false);
+      return;
+    }
+    this.notifSvc
+      .sendNotification({
+        userId: null,
+        title: '⏰ Auction Reminder',
+        body: this.reminderMsg,
+        type: 'AuctionStartingSoon',
+      })
+      .subscribe({
+        next: () => {
+          this.success.set(`Reminder sent to ${pending.length} pending teams!`);
+          this.reminderMsg = '';
+          this.saving.set(false);
+          setTimeout(() => this.success.set(''), 4000);
+        },
+        error: () => {
+          this.error.set('Failed to send reminder.');
+          this.saving.set(false);
+        },
+      });
   }
 
   startAuction() {
@@ -396,13 +997,38 @@ export class AuctionLobbyComponent implements OnInit, OnDestroy {
     if (!sid) return;
     this.saving.set(true);
     this.auctionSvc.startAuction(sid).subscribe({
-      next: () => { this.success.set('✅ Auction started!'); this.saving.set(false); this.loadLobby(sid); },
-      error: (e: any) => { this.error.set(e?.error?.error ?? 'Failed to start.'); this.saving.set(false); }
+      next: () => {
+        this.success.set('✅ Auction started!');
+        this.saving.set(false);
+        this.loadLobby(sid);
+      },
+      error: (e: any) => {
+        this.error.set(e?.error?.error ?? 'Failed to start.');
+        this.saving.set(false);
+      },
     });
   }
 
-  invStatusClass(s: string) { return s?.toLowerCase() ?? 'pending'; }
-  invStatusLabel(s: string) { return { Accepted:'✅ Accepted', Pending:'🕒 Pending', Declined:'❌ Declined' }[s] ?? s; }
-  statusBadge(s: string) { const m: any = { Upcoming:'athena-badge-surface', ReadyForAuction:'athena-badge-blue', AuctionPhase:'athena-badge-red', InProgress:'athena-badge-green' }; return m[s] ?? 'athena-badge-surface'; }
-  modeLabel(m: string) { return { FreshAuction:'Fresh', AuctionWithRetentions:'Retention', DirectAllocation:'Direct' }[m] ?? m; }
+  invStatusClass(s: string) {
+    return s?.toLowerCase() ?? 'pending';
+  }
+  invStatusLabel(s: string) {
+    return { Accepted: '✅ Accepted', Pending: '🕒 Pending', Declined: '❌ Declined' }[s] ?? s;
+  }
+  statusBadge(s: string) {
+    const m: any = {
+      Upcoming: 'athena-badge-surface',
+      ReadyForAuction: 'athena-badge-blue',
+      AuctionPhase: 'athena-badge-red',
+      InProgress: 'athena-badge-green',
+    };
+    return m[s] ?? 'athena-badge-surface';
+  }
+  modeLabel(m: string) {
+    return (
+      { FreshAuction: 'Fresh', AuctionWithRetentions: 'Retention', DirectAllocation: 'Direct' }[
+        m
+      ] ?? m
+    );
+  }
 }

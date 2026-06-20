@@ -177,7 +177,15 @@ public static class TeamEndpoints
                 team.RetainedPlayers.Select(r => new RetainedPlayerResponse(
                     r.PlayerId, r.Player.Name, r.Player.IPLTeam,
                     r.Player.Role.ToString(), r.RetentionCostCr,
-                    r.Slot.ToString())).ToList()));
+                    r.Slot.ToString())).ToList(),
+                Players: ut?.Players.Select(p => new SquadPlayerResponse(
+                    p.Id,
+                    new PlayerSummary(p.PlayerId, p.Player.Name, p.Player.IPLTeam,
+                        p.Player.Role.ToString(), p.Player.IsOverseas),
+                    p.Slot.ToString(),
+                    p.IsCaptain, p.IsViceCaptain, p.IsImpactPlayer,
+                    p.PurchasedPriceCr)).ToList() ?? new List<SquadPlayerResponse>(),
+                RtmSlotsRemaining: ut?.RtmSlotsRemaining ?? 0));
         }).RequireAuthorization();
 
         // ── PUT /api/teams/{id} ───────────────────────────────────────────────
