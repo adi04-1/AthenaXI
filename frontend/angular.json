@@ -41,7 +41,9 @@
                 "glob": "**/*",
                 "input": "src/assets",
                 "output": "/assets"
-              }
+              },
+              "src/assets/Athena_icon.ico",
+              "src/assets/Athena_icon.png"
             ],
             "styles": [
               "src/styles.css"

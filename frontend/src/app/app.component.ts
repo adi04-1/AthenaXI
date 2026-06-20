@@ -17,7 +17,8 @@ import { SeasonService } from './core/services/season.service';
       @if (auth.isLoggedIn() && !isAdminRoute()) {
         <aside class="app-sidebar">
           <div class="sidebar-brand">
-            <span class="athena-brand" style="font-size:16px">AthenaXI</span>
+            <!-- <span class="athena-brand" style="font-size:16px">AthenaXI</span> -->
+             <img src="assets/Athena_header_logo.png" alt="AthenaXI" style="height:60px;width:auto">
           </div>
 
           <div class="sidebar-user">
@@ -27,26 +28,26 @@ import { SeasonService } from './core/services/season.service';
 
           <nav class="sidebar-nav">
             <a routerLink="/leaderboard" routerLinkActive="active" class="sidebar-nav-item">
-              <span class="nav-icon-text">LB</span><span class="nav-text">Leaderboard</span>
+              <span class="nav-icon-text">🏆</span><span class="nav-text">Leaderboard</span>
             </a>
             @if (auth.isAdmin()) {
               <a routerLink="/admin" class="sidebar-nav-item">
-                <span class="nav-icon-text">ADM</span><span class="nav-text">Admin Panel</span>
+                <span class="nav-icon-text">👮</span><span class="nav-text">Admin Panel</span>
               </a>
             } @else {
               <a routerLink="/auction" routerLinkActive="active" class="sidebar-nav-item">
-                <span class="nav-icon-text">AUC</span><span class="nav-text">Auction</span>
+                <span class="nav-icon-text">👨‍⚖</span><span class="nav-text">Auction</span>
               </a>
               <a routerLink="/team" routerLinkActive="active" class="sidebar-nav-item">
-                <span class="nav-icon-text">TEAM</span><span class="nav-text">My Team</span>
+                <span class="nav-icon-text">👥</span><span class="nav-text">My Team</span>
               </a>
               <a routerLink="/transfers" routerLinkActive="active" class="sidebar-nav-item">
-                <span class="nav-icon-text">TRF</span><span class="nav-text">Transfers</span>
+                <span class="nav-icon-text">🔄</span><span class="nav-text">Transfers</span>
               </a>
             }
             <a routerLink="/notifications" routerLinkActive="active" class="sidebar-nav-item">
               <span class="nav-icon-text notif-wrap">
-                BELL
+                🔔
                 @if (notifSvc.unreadCount() > 0) { <span class="notif-dot"></span> }
               </span>
               <span class="nav-text">Alerts</span>
@@ -55,7 +56,7 @@ import { SeasonService } from './core/services/season.service';
 
           <div class="sidebar-footer">
             <button class="sidebar-nav-item logout-btn" (click)="auth.logout()">
-              <span class="nav-icon-text">OUT</span><span class="nav-text">Logout</span>
+              <span class="nav-icon-text">🚪</span><span class="nav-text">Logout</span>
             </button>
           </div>
         </aside>
@@ -83,31 +84,31 @@ import { SeasonService } from './core/services/season.service';
       @if (auth.isLoggedIn() && !isAdminRoute()) {
         <nav class="athena-bottom-nav">
           <a routerLink="/leaderboard" routerLinkActive="active" class="athena-nav-item">
-            <span class="nav-icon-text">LB</span>
+            <span class="nav-icon-text">🏆</span>
             <span class="nav-label">Leaderboard</span>
           </a>
           @if (auth.isAdmin()) {
             <a routerLink="/admin" class="athena-nav-item">
-              <span class="nav-icon-text">ADM</span>
+              <span class="nav-icon-text">👮</span>
               <span class="nav-label">Admin</span>
             </a>
           } @else {
             <a routerLink="/auction" routerLinkActive="active" class="athena-nav-item">
-              <span class="nav-icon-text">AUC</span>
+              <span class="nav-icon-text">👨‍⚖</span>
               <span class="nav-label">Auction</span>
             </a>
             <a routerLink="/team" routerLinkActive="active" class="athena-nav-item">
-              <span class="nav-icon-text">TEAM</span>
+              <span class="nav-icon-text">👥</span>
               <span class="nav-label">My Team</span>
             </a>
             <a routerLink="/transfers" routerLinkActive="active" class="athena-nav-item">
-              <span class="nav-icon-text">TRF</span>
+              <span class="nav-icon-text">🔄</span>
               <span class="nav-label">Transfers</span>
             </a>
           }
           <a routerLink="/notifications" routerLinkActive="active" class="athena-nav-item notif-item">
             <span class="nav-icon-text">
-              BELL
+              🔔
               @if (notifSvc.unreadCount() > 0) {
                 <span class="notif-dot"></span>
               }
