@@ -821,9 +821,19 @@ public static class AuctionEndpoints
                 (orderValues[i], orderValues[j]) = (orderValues[j], orderValues[i]);
             }
 
+            // Two-phase update — AuctionOrder has a unique constraint, so writing the
+            // permuted values directly can collide mid-transaction with a value still
+            // sitting on another row (e.g. row A: 5→7, row B: 7→5 — if A's update runs
+            // first, "7" temporarily exists on two rows and Postgres throws a unique
+            // violation, surfacing as a 500). Phase 1 moves every row to a guaranteed-
+            // unique negative offset; phase 2 applies the real shuffled values once
+            // there's no possibility of collision.
+            for (int i = 0; i < pendingSlots.Count; i++)
+                pendingSlots[i].AuctionOrder = -(i + 1) - 1000000; // far below any real order value
+            await db.SaveChangesAsync();
+
             for (int i = 0; i < pendingSlots.Count; i++)
                 pendingSlots[i].AuctionOrder = orderValues[i];
-
             await db.SaveChangesAsync();
 
             return Results.Ok(new
