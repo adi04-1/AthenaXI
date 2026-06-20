@@ -1,0 +1,617 @@
+@import "https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Archivo+Black&family=Inter:wght@400;500;600;700&display=swap";
+
+/* src/athena-theme.css */
+:root {
+  --navy-deep: #0A1F2F;
+  --navy-midnight: #1E3A5F;
+  --navy-surface: #11273E;
+  --gold: #D4AF37;
+  --gold-light: #F3E5AB;
+  --gold-dark: #AA7C11;
+  --red-live: #FF3B30;
+  --red-pressure: #E63946;
+  --green-cricket: #00C853;
+  --green-soft: #2D9CDB;
+  --font-heading:
+    "Montserrat",
+    "Playfair Display",
+    serif;
+  --font-timer: "Archivo Black", sans-serif;
+  --font-body:
+    "Inter",
+    "Segoe UI",
+    sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html,
+body {
+  background-color: var(--navy-deep);
+  color: #ffffff;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+body {
+  background-image:
+    radial-gradient(
+      ellipse at 50% 0%,
+      var(--navy-midnight) 0%,
+      var(--navy-deep) 70%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-attachment: fixed;
+}
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: var(--navy-deep);
+}
+::-webkit-scrollbar-thumb {
+  background: #D4AF3755;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gold);
+}
+.athena-heading {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background:
+    linear-gradient(
+      180deg,
+      #FFFFFF 0%,
+      var(--gold) 70%,
+      var(--gold-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.athena-subheading {
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 13px;
+}
+.athena-label {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  color: #888888;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.athena-timer {
+  font-family: var(--font-timer);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--gold);
+}
+.athena-amount {
+  font-family: var(--font-timer);
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  background:
+    linear-gradient(
+      90deg,
+      var(--gold-dark),
+      var(--gold),
+      var(--gold-light),
+      var(--gold),
+      var(--gold-dark));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+.athena-card {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(30, 58, 95, 0.8) 0%,
+      rgba(10, 31, 47, 0.95) 100%),
+    linear-gradient(
+      135deg,
+      var(--gold) 0%,
+      var(--gold-dark) 50%,
+      var(--gold-light) 100%);
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(212, 175, 55, 0.12);
+  padding: 20px;
+}
+.athena-card-sm {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(17, 39, 62, 0.9) 0%,
+      rgba(10, 31, 47, 0.95) 100%),
+    linear-gradient(
+      135deg,
+      var(--gold-dark) 0%,
+      var(--gold) 100%);
+  background-clip: padding-box, border-box;
+  background-origin: padding-box, border-box;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+.athena-btn {
+  position: relative;
+  overflow: hidden;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  padding: 12px 24px;
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
+}
+.athena-btn:active {
+  transform: scale(0.97) translateY(1px) !important;
+}
+.athena-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.athena-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.athena-btn-primary {
+  background:
+    linear-gradient(
+      135deg,
+      var(--gold-dark) 0%,
+      var(--gold) 45%,
+      var(--gold-light) 100%);
+  color: var(--navy-deep);
+  box-shadow: 0 6px 24px rgba(170, 124, 17, 0.5), inset 0 1px 0 rgba(243, 229, 171, 0.4);
+}
+.athena-btn-primary::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.18) 0%,
+      transparent 100%);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  pointer-events: none;
+}
+.athena-btn-secondary {
+  background: transparent;
+  color: #888;
+  border: 1px solid #444 !important;
+  box-shadow: none;
+}
+.athena-btn-secondary:hover:not(:disabled) {
+  border-color: var(--gold-dark) !important;
+  color: var(--gold);
+  filter: none;
+}
+.athena-btn-danger {
+  background:
+    linear-gradient(
+      135deg,
+      #7b1e1e,
+      var(--red-pressure));
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(230, 57, 70, 0.3);
+}
+.athena-btn-success {
+  background:
+    linear-gradient(
+      135deg,
+      #0d4a1f,
+      var(--green-cricket));
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0, 200, 83, 0.25);
+}
+.athena-input {
+  background: rgba(10, 31, 47, 0.9);
+  border: 1px solid #333;
+  border-radius: var(--radius-sm);
+  color: #ffffff;
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 11px 14px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.athena-input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.12);
+}
+.athena-input::placeholder {
+  color: #555;
+}
+.athena-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+label.athena-field-label {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: #aaa;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.athena-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-xl);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.athena-badge-gold {
+  background: rgba(212, 175, 55, 0.15);
+  color: var(--gold);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+.athena-badge-red {
+  background: rgba(255, 59, 48, 0.15);
+  color: var(--red-live);
+  border: 1px solid rgba(255, 59, 48, 0.3);
+}
+.athena-badge-green {
+  background: rgba(0, 200, 83, 0.12);
+  color: var(--green-cricket);
+  border: 1px solid rgba(0, 200, 83, 0.25);
+}
+.athena-badge-blue {
+  background: rgba(45, 156, 219, 0.12);
+  color: var(--green-soft);
+  border: 1px solid rgba(45, 156, 219, 0.25);
+}
+.athena-badge-surface {
+  background: rgba(30, 58, 95, 0.6);
+  color: #ccc;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.athena-live-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.athena-live-dot::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--red-live);
+  box-shadow: 0 0 8px var(--red-live);
+  animation: pulse-dot 1.2s ease infinite;
+}
+.athena-topbar {
+  background: rgba(10, 31, 47, 0.97);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.18);
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+.athena-brand {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  background:
+    linear-gradient(
+      180deg,
+      #fff 0%,
+      var(--gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.athena-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(10, 31, 47, 0.97);
+  border-top: 1px solid rgba(212, 175, 55, 0.18);
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  z-index: 100;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+.athena-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  text-decoration: none;
+  color: #555;
+  font-size: 22px;
+  min-width: 48px;
+  min-height: 48px;
+  justify-content: center;
+  transition: color 0.15s;
+  border-radius: var(--radius-sm);
+}
+.athena-nav-item:hover,
+.athena-nav-item.active {
+  color: var(--gold);
+}
+.athena-nav-item .nav-label {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.athena-page {
+  padding: 20px 16px;
+  max-width: 640px;
+  margin: 0 auto;
+  padding-bottom: 90px;
+}
+.athena-page-wide {
+  padding: 20px 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-bottom: 90px;
+}
+.athena-page-title {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background:
+    linear-gradient(
+      180deg,
+      #fff 0%,
+      var(--gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 20px;
+}
+.athena-row {
+  background: rgba(30, 58, 95, 0.45);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  border-left: 3px solid var(--gold-dark);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: background 0.15s;
+}
+.athena-row:hover {
+  background: rgba(30, 58, 95, 0.7);
+}
+.athena-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.athena-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.athena-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.athena-error {
+  background: rgba(58, 10, 10, 0.9);
+  border: 1px solid var(--red-pressure);
+  color: #ff6b6b;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.athena-success {
+  background: rgba(10, 58, 26, 0.9);
+  border: 1px solid var(--green-cricket);
+  color: #4ade80;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.athena-info {
+  background: rgba(45, 156, 219, 0.1);
+  border: 1px solid rgba(45, 156, 219, 0.3);
+  color: var(--green-soft);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.athena-steps {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.athena-step {
+  background: rgba(30, 58, 95, 0.4);
+  border-radius: var(--radius-xl);
+  padding: 4px 12px;
+  font-size: 11px;
+  color: #555;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+.athena-step.active {
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--gold);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+.athena-step.done {
+  background: rgba(0, 200, 83, 0.1);
+  color: #4ade80;
+}
+.rank-1 {
+  color: #FFD700;
+}
+.rank-2 {
+  color: #C0C0C0;
+}
+.rank-3 {
+  color: #CD7F32;
+}
+.athena-player-card {
+  position: relative;
+  overflow: hidden;
+}
+.athena-player-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  pointer-events: none;
+}
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(5);
+    opacity: 0;
+  }
+}
+@keyframes slide-in {
+  0% {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.15;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-slide-in {
+  animation: slide-in 0.3s ease;
+}
+.animate-fade-in {
+  animation: fade-in 0.25s ease;
+}
+@media (min-width: 640px) {
+  .athena-page {
+    padding: 28px 24px 90px;
+  }
+  .athena-grid-2 {
+    gap: 18px;
+  }
+  .athena-page-title {
+    font-size: 28px;
+  }
+}
+@media (min-width: 1024px) {
+  .athena-page {
+    max-width: 800px;
+  }
+  .athena-topbar {
+    padding: 12px 32px;
+  }
+  .athena-bottom-nav {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* src/styles.css */
+
+/* angular:styles/global:styles */
+/*# sourceMappingURL=styles.css.map */

@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/transfers/transfers.component.ts"],
+  "sourcesContent": ["import { Component } from '@angular/core';\nimport { CommonModule } from '@angular/common';\n@Component({ selector: 'app-transfers', standalone: true, imports: [CommonModule],\n  template: `<div class=\"page\"><h1 class=\"t\">🔄 TRANSFER</h1><p class=\"s\">Transfer windows open after Match 18.</p></div>`,\n  styles: [`.page{padding:16px} .t{color:#C9A84C;font-size:22px;font-weight:800} .s{color:#666}`]\n})\nexport class TransfersComponent {}\n"],
+  "mappings": ";;;;;;;;;;;AAMM,IAAO,qBAAP,MAAO,oBAAkB;;;uBAAlB,qBAAkB;IAAA;EAAA;;yEAAlB,qBAAkB,WAAA,CAAA,CAAA,eAAA,CAAA,GAAA,YAAA,MAAA,UAAA,CAAA,6BAAA,GAAA,OAAA,GAAA,MAAA,GAAA,QAAA,CAAA,CAAA,GAAA,MAAA,GAAA,CAAA,GAAA,GAAA,GAAA,CAAA,GAAA,GAAA,CAAA,GAAA,UAAA,SAAA,4BAAA,IAAA,KAAA;AAAA,UAAA,KAAA,GAAA;AAHlB,QAAA,yBAAA,GAAA,OAAA,CAAA,EAAkB,GAAA,MAAA,CAAA;AAAc,QAAA,iBAAA,GAAA,oBAAA;AAAW,QAAA,uBAAA;AAAK,QAAA,yBAAA,GAAA,KAAA,CAAA;AAAa,QAAA,iBAAA,GAAA,uCAAA;AAAqC,QAAA,uBAAA,EAAI;;sBAD/C,YAAY,GAAA,QAAA,CAAA,8OAAA,EAAA,CAAA;EAAA;;;6EAInE,oBAAkB,EAAA,WAAA,sBAAA,UAAA,0CAAA,YAAA,EAAA,CAAA;AAAA,GAAA;",
+  "names": []
+}
