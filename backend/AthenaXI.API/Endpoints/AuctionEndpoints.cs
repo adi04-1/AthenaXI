@@ -109,6 +109,27 @@ public static class AuctionEndpoints
                 current));
         }).AllowAnonymous();
 
+        // ── GET /api/auction/session-any/{seasonId} ───────────────────────────
+        // Resolves a season to its auction session regardless of status —
+        // unlike /session/{seasonId} above (which deliberately excludes
+        // Completed for the live auction room), this is for views that need
+        // historical data after the auction has finished, e.g. the admin
+        // summary panel.
+        group.MapGet("/session-any/{seasonId:guid}", async (
+            Guid seasonId,
+            AthenaXIDbContext db) =>
+        {
+            var session = await db.AuctionSessions
+                .Where(a => a.SeasonId == seasonId)
+                .OrderByDescending(a => a.StartedAt)
+                .FirstOrDefaultAsync();
+
+            if (session is null)
+                return Results.Ok(new { id = (Guid?)null, status = "NoSession" });
+
+            return Results.Ok(new { id = session.Id, status = session.Status.ToString() });
+        }).AllowAnonymous();
+
         // ── GET /api/auction/standings/{seasonId} ─────────────────────────────
         // Live budget + squad standings for big screen
         group.MapGet("/standings/{seasonId:guid}", async (
@@ -680,7 +701,12 @@ public static class AuctionEndpoints
             AthenaXIDbContext db,
             ClaimsPrincipal caller) =>
         {
-            var userId = Guid.Parse(caller.FindFirst("userId")!.Value);
+            var userIdStr = caller.FindFirst("userId")?.Value
+                         ?? caller.FindFirst("sub")?.Value
+                         ?? caller.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (userIdStr is null || !Guid.TryParse(userIdStr, out var userId))
+                return Results.Unauthorized();
 
             var invite = await db.AuctionInvites
                 .Include(i => i.FantasyTeam)
@@ -709,16 +735,23 @@ public static class AuctionEndpoints
             AthenaXIDbContext db,
             ClaimsPrincipal caller) =>
         {
-            var userId = Guid.Parse(caller.FindFirst("userId")!.Value);
+            // Try multiple claim name patterns — defensive against JWT remapping
+            var userIdStr = caller.FindFirst("userId")?.Value
+                         ?? caller.FindFirst("sub")?.Value
+                         ?? caller.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (userIdStr is null || !Guid.TryParse(userIdStr, out var userId))
+                return Results.Unauthorized();
 
             var team = await db.FantasyTeams
                 .FirstOrDefaultAsync(t => t.UserId == userId && t.SeasonId == seasonId);
-            if (team is null) return Results.NotFound(new { error = "No team found." });
+            if (team is null)
+                return Results.NotFound(new { error = $"No team found for userId={userId} seasonId={seasonId}." });
 
             var session = await db.AuctionSessions
                 .FirstOrDefaultAsync(a => a.SeasonId == seasonId);
             if (session is null)
-                return Results.Ok(new { id = (Guid?)null, status = "NoSession", message = "No auction session found for this season. Upload player pool and auction order first." });
+                return Results.Ok(new { id = (Guid?)null, status = "NoSession", message = "No auction session found." });
 
             var invite = await db.AuctionInvites
                 .FirstOrDefaultAsync(i => i.AuctionSessionId == session.Id && i.FantasyTeamId == team.Id);
@@ -729,6 +762,110 @@ public static class AuctionEndpoints
                 invite.Id, invite.AuctionSessionId, invite.FantasyTeamId,
                 team.Name, team.ShortCode, team.ThemeColour,
                 invite.Status.ToString(), invite.SentAt, invite.RespondedAt));
+        }).RequireAuthorization();
+
+        // ── GET /api/auction/{sessionId}/sets ─────────────────────────────────
+        // Returns each distinct AuctionSet in order, with pending/sold/unsold counts —
+        // powers the admin "Shuffle Set" picker UI.
+        group.MapGet("/{sessionId:guid}/sets", async (
+            Guid sessionId,
+            AthenaXIDbContext db) =>
+        {
+            var slots = await db.AuctionPlayerSlots
+                .Where(s => s.AuctionSessionId == sessionId)
+                .ToListAsync();
+
+            if (!slots.Any()) return Results.Ok(Array.Empty<object>());
+
+            var grouped = slots
+                .GroupBy(s => s.AuctionSet)
+                .OrderBy(g => g.Min(s => s.AuctionOrder))
+                .Select(g => new
+                {
+                    auctionSet     = g.Key,
+                    setDisplayName = g.First().SetDisplayName ?? g.Key,
+                    totalPlayers   = g.Count(),
+                    pendingCount   = g.Count(s => s.Status == AuctionSlotStatus.Pending),
+                    soldCount      = g.Count(s => s.Status == AuctionSlotStatus.Sold),
+                    unsoldCount    = g.Count(s => s.Status == AuctionSlotStatus.Unsold),
+                    canShuffle     = g.Count(s => s.Status == AuctionSlotStatus.Pending) > 1,
+                });
+
+            return Results.Ok(grouped);
+        }).AllowAnonymous();
+
+        // ── POST /api/auction/{sessionId}/shuffle-set ─────────────────────────
+        // Admin-triggered — re-randomizes AuctionOrder only among Pending slots
+        // sharing the given AuctionSet. Sets themselves stay in fixed sequence;
+        // only the order of not-yet-auctioned players within the chosen set changes.
+        // Already-Sold/Unsold/Active slots are untouched, and the shuffled values
+        // stay within the same numeric range the set already occupied, so it can
+        // never reorder players across set boundaries.
+        group.MapPost("/{sessionId:guid}/shuffle-set", async (
+            Guid sessionId,
+            ShuffleSetRequest req,
+            AthenaXIDbContext db,
+            ClaimsPrincipal caller) =>
+        {
+            if (!IsAdminOrOwner(caller)) return Results.Forbid();
+
+            var session = await db.AuctionSessions.FindAsync(sessionId);
+            if (session is null) return Results.NotFound();
+
+            // Don't allow shuffling the set currently being auctioned mid-bid —
+            // only Pending slots are touched anyway, but block if anything in
+            // this set is Active to avoid confusing the live bidding screen.
+            var activeInSet = await db.AuctionPlayerSlots.AnyAsync(s =>
+                s.AuctionSessionId == sessionId &&
+                s.AuctionSet == req.AuctionSet &&
+                s.Status == AuctionSlotStatus.Active);
+            if (activeInSet)
+                return Results.BadRequest(new { error = "Resolve the current player before shuffling this set." });
+
+            var pendingSlots = await db.AuctionPlayerSlots
+                .Where(s => s.AuctionSessionId == sessionId &&
+                            s.AuctionSet == req.AuctionSet &&
+                            s.Status == AuctionSlotStatus.Pending)
+                .ToListAsync();
+
+            if (pendingSlots.Count < 2)
+                return Results.BadRequest(new { error = "Need at least 2 pending players in this set to shuffle." });
+
+            // Preserve the exact set of AuctionOrder values already in use for this
+            // set — shuffle is a permutation of those same values, never introducing
+            // new numbers or touching slots outside this set.
+            var orderValues = pendingSlots.Select(s => s.AuctionOrder).ToList();
+            var rng = Random.Shared;
+            for (int i = orderValues.Count - 1; i > 0; i--)
+            {
+                int j = rng.Next(i + 1);
+                (orderValues[i], orderValues[j]) = (orderValues[j], orderValues[i]);
+            }
+
+            // Two-phase update via raw SQL — EF's change tracker treats both phases as
+            // one batch even across two SaveChangesAsync calls (it still detects a
+            // circular dependency on the unique index before either hits the DB).
+            // Raw SQL forces real separate round-trips, so phase 1 actually commits
+            // before phase 2 runs.
+            foreach (var slot in pendingSlots)
+            {
+                var tempOrder = -(pendingSlots.IndexOf(slot) + 1) - 1000000;
+                await db.Database.ExecuteSqlInterpolatedAsync(
+                    $"UPDATE \"AuctionPlayerSlots\" SET \"AuctionOrder\" = {tempOrder} WHERE \"Id\" = {slot.Id}");
+            }
+
+            for (int i = 0; i < pendingSlots.Count; i++)
+            {
+                await db.Database.ExecuteSqlInterpolatedAsync(
+                    $"UPDATE \"AuctionPlayerSlots\" SET \"AuctionOrder\" = {orderValues[i]} WHERE \"Id\" = {pendingSlots[i].Id}");
+            }
+
+            return Results.Ok(new
+            {
+                message      = $"Shuffled {pendingSlots.Count} players in {req.AuctionSet}.",
+                auctionSet   = req.AuctionSet,
+                playerCount  = pendingSlots.Count,
+            });
         }).RequireAuthorization();
     }
     

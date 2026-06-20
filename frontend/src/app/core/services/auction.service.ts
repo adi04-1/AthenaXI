@@ -8,6 +8,7 @@ export class AuctionService {
   constructor(private http: HttpClient) {}
 
   getSession(seasonId: string) { return this.http.get<any>(`${this.api}/auction/session/${seasonId}`); }
+  getSessionAny(seasonId: string) { return this.http.get<any>(`${this.api}/auction/session-any/${seasonId}`); }
   getStandings(seasonId: string) { return this.http.get<any[]>(`${this.api}/auction/standings/${seasonId}`); }
   getBids(slotId: string) { return this.http.get<any[]>(`${this.api}/auction/bids/${slotId}`); }
   getResults(sessionId: string) { return this.http.get<any[]>(`${this.api}/auction/results/${sessionId}`); }
@@ -22,6 +23,10 @@ export class AuctionService {
   completeAuction(sessionId: string) { return this.http.post<any>(`${this.api}/auction/${sessionId}/complete`, {}); }
   sendInvites(sessionId: string) { return this.http.post<any>(`${this.api}/auction/${sessionId}/send-invites`, {}); }
   getLobby(sessionId: string) { return this.http.get<any>(`${this.api}/auction/${sessionId}/lobby`); }
+  getSets(sessionId: string) { return this.http.get<any[]>(`${this.api}/auction/${sessionId}/sets`); }
+  shuffleSet(sessionId: string, auctionSet: string) {
+    return this.http.post<any>(`${this.api}/auction/${sessionId}/shuffle-set`, { auctionSet });
+  }
   respondToInvite(body: { inviteId: string; accept: boolean }) { return this.http.post<any>(`${this.api}/auction/invite/respond`, body); }
   getMyInvite(seasonId: string) { return this.http.get<any>(`${this.api}/auction/my-invite/${seasonId}`); }
 }

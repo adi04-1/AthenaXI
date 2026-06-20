@@ -70,8 +70,8 @@ import { AuthService } from '../core/services/auth.service';
 export class AdminComponent {
   navItems = [
     { route: 'seasons',       icon: '📆', label: 'Seasons' },
-    { route: 'auction',       icon: '📤', label: 'Auction Lobby' },
-    { route: 'players',       icon: '👥', label: 'Player Upload' },
+    { route: 'auction',       icon: '👨‍⚖', label: 'Auction Lobby' },
+    { route: 'players',       icon: '📤', label: 'Player Upload' },
     { route: 'notifications', icon: '🔔', label: 'Notifications' },
   ];
   constructor(public auth: AuthService) {}

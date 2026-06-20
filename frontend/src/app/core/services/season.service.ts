@@ -16,7 +16,9 @@ export class SeasonService {
   getById(id: string) { return this.http.get<any>(`${this.api}/seasons/${id}`); }
   create(body: any)   { return this.http.post<any>(`${this.api}/seasons`, body); }
   updateConfig(id: string, body: any) { return this.http.put<any>(`${this.api}/seasons/${id}/config`, body); }
-  updateStatus(id: string, status: string) { return this.http.put<any>(`${this.api}/seasons/${id}/status`, { status }); }
+  updateStatus(id: string, status: string, dates?: { auctionDate?: string; seasonStartDate?: string; seasonEndDate?: string }) {
+    return this.http.put<any>(`${this.api}/seasons/${id}/status`, { status, ...dates });
+  }
   delete(id: string)  { return this.http.delete<any>(`${this.api}/seasons/${id}`); }
 
   getActive() {
