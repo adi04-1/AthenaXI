@@ -143,7 +143,7 @@ app.UseSwaggerUI(c =>
 app.UseCors("AllowAngular");
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseHangfireDashboard("/hangfire");
+//app.UseHangfireDashboard("/hangfire");
 
 // ─── Debug — remove after confirming claims work ─────────────────────────────
 app.MapGet("/debug/claims", (ClaimsPrincipal caller) =>
