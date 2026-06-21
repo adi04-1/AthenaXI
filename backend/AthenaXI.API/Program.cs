@@ -74,9 +74,19 @@ builder.Services.AddAuthorizationBuilder()
         p.RequireAuthenticatedUser());
 
 // ─── Hangfire ─────────────────────────────────────────────────────────────────
-builder.Services.AddHangfire(config =>
-    config.UsePostgreSqlStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddHangfireServer();
+// TEMPORARILY DISABLED — Hangfire.PostgreSql issues session-level commands
+// (advisory locks, DISCARD ALL) that are incompatible with Supabase's
+// transaction-mode pooled connection (port 6543). This was causing every
+// write request (POST/PUT) to hang for 60s+ waiting on a stuck connection,
+// while reads stayed fast. No scheduled jobs are wired up yet anyway (that's
+// planned for Day 24+ — match-stat sync cron), so disabling entirely until
+// then rather than fighting pooler compatibility for an unused feature.
+// To re-enable: either point Hangfire at Supabase's SESSION-mode pooler
+// (port 5432 direct, or a dedicated session-mode pooler endpoint) on its
+// own separate connection string, not the shared transaction-mode one.
+// builder.Services.AddHangfire(config =>
+//     config.UsePostgreSqlStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+// builder.Services.AddHangfireServer();
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
