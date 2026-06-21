@@ -46,6 +46,8 @@ public class AthenaXIDbContext(DbContextOptions<AthenaXIDbContext> options) : Db
         // ── Season ───────────────────────────────────────────────────────────
         mb.Entity<Season>(e =>
         {
+            e.HasIndex(x => new { x.Year, x.Name })
+            .IsUnique();
             e.Property(s => s.Status).HasConversion<string>();
             e.Property(s => s.Mode).HasConversion<string>();
             e.HasOne(s => s.Config)

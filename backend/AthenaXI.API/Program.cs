@@ -1,15 +1,15 @@
+using System.Security.Claims;
+using System.Text;
 using AthenaXI.API.Endpoints;
 using AthenaXI.API.Services;
+using AthenaXI.Core.Enums;
 using AthenaXI.Data;
 using AthenaXI.Data.Seed;
+using Hangfire;
+using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using System.Security.Claims;
-using Hangfire;
-using Hangfire.PostgreSql;
-using AthenaXI.Core.Enums;
 
 // ── CRITICAL: Prevent JWT middleware from remapping claim names ───────────────
 // Without this, "role" claim is renamed to the long URI and ALL role checks fail
@@ -19,9 +19,19 @@ System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler.DefaultOutboundClaimType
 var builder = WebApplication.CreateBuilder(args);
 
 // ─── Database ─────────────────────────────────────────────────────────────────
+// builder.Services.AddDbContext<AthenaXIDbContext>(options =>
+//     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddDbContext<AthenaXIDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        npgsql =>
+        {
+            npgsql.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(10),
+                errorCodesToAdd: null);
+        }));
+        
 // ─── Services ─────────────────────────────────────────────────────────────────
 builder.Services.AddScoped<TokenService>();
 
